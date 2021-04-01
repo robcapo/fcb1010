@@ -1,24 +1,27 @@
-from enum import Enum
+from enum import IntEnum, Enum
 from threading import Timer
 from typing import Callable
 import logging
 import time
-import asyncio
+import threading
 import queue
 
+CC_BYTE = 176
+DOWN_BYTE = 104
+UP_BYTE = 105
 
 logger = logging.getLogger(__name__)
 
 # Types of events that can happen to a foot switch on the pedal
-class EventType(Enum):
+class EventType(IntEnum):
 	# Physical events, foot switch went down or up
 	DOWN 			= 1 << 0
 	UP 				= 1 << 1
 
 	# Abstract events based on the timing of downs and ups
-	PRESS 			= 1 << 3
-	LONG_PRESS 		= 1 << 4
-	DOUBLE_PRESS 	= 1 << 5
+	PRESS 			= 1 << 2
+	LONG_PRESS 		= 1 << 3
+	DOUBLE_PRESS 	= 1 << 4
 
 # Foot switch identifier
 class FootSwitch(Enum):
@@ -35,8 +38,9 @@ class FootSwitch(Enum):
 	UP = 11
 	DOWN = 12
 
-# An event that happens to a foot switch
 class FootSwitchEvent(object):
+	"""An event that happens to a foot switch"""
+
 	def __init__(self, switch, event_type):
 		self.switch = switch
 		self.type = event_type
@@ -46,65 +50,58 @@ class FootSwitchEvent(object):
 
 
 class FootSwitchEventBus(object):
+	"""
+	Handles all the events of the 10 numbered foot switches + UP + DOWN.
+	Does not handle expression pedal events.
+	"""
+
 	def __init__(self):
-		self._subscribers = {switch: {} for switch in FootSwitch}
+		self._subscribers = {}
 		self._is_down = {switch: False for switch in FootSwitch}
 		self._double_press_switch = None
 		self._long_press_timers = {switch: None for switch in FootSwitch}
+		self._mode = None
 
-	def subscribe(self, event_type, footswitch, callback):
-		self._subscribers[footswitch][event_type] = callback
+	def subscribe(self, mode, footswitch: FootSwitch, event_types: EventType, callback: Callable[[FootSwitchEvent], None]):
+		if self._mode is not None:
+			raise RuntimeError("No messing with subscribers once the mode is set.")
 
-	def _notify(self, event):
-		logger.info(event)
-		if event.type in self._subscribers[event.switch]:
-			self._subscribers[event.switch][event.type]()
+		if mode not in self._subscribers:
+			self._subscribers[mode] = {}
 
+		self._subscribers[mode][footswitch] = Notifier(event_types, callback)
+
+	def set_mode(self, mode):
+		if mode not in self._subscribers:
+			raise RuntimeError("Could not find mode {}. Modes are {}".format(mode, self._subscribers.keys()))
+		self._mode = mode
 
 	def midi_callback(self, byte1, byte2, byte3, *a):
-		if byte1 == 176:
-			if byte2 == 104:
-				self._down_callback(byte3)
-			elif byte2 == 105:
-				self._up_callback(byte3)
-
-	def _down_callback(self, value):
-		switch = value_to_switch(value)
-		self._is_down[switch] = True
-		self._notify(FootSwitchEvent(switch, EventType.DOWN))
-
-		def long_press_notification():
-			if self._is_down[switch]:
-				self._notify(FootSwitchEvent(switch, EventType.LONG_PRESS))
-		self._long_press_timers[switch] = Timer(1.0, long_press_notification)
-		self._long_press_timers[switch].start()
-
-		if self._double_press_switch == switch:
-			self._notify(FootSwitchEvent(switch, EventType.DOUBLE_PRESS))
-		else:
-			def double_press_reset():
-				if self._double_press_switch == switch:
-					self._double_press_switch = None
-			self._double_press_switch = switch
-			Timer(1.0, double_press_reset).start()
-
-	def _up_callback(self, value):
-		switch = value_to_switch(value)
-		self._is_down[switch] = False
-		if self._long_press_timers[switch] is not None:
-			self._long_press_timers[switch].cancel()
-			del self._long_press_timers[switch]
-		self._notify(FootSwitchEvent(switch, EventType.UP))
+		if byte1 == CC_BYTE:
+			if byte2 == DOWN_BYTE:
+				switch = value_to_switch(byte3)
+				if switch in self._subscribers[self._mode]:
+					self._subscribers[self._mode][switch].down_callback()
+			elif byte2 == UP_BYTE:
+				switch = value_to_switch(byte3)
+				if switch in self._subscribers[self._mode]:
+					self._subscribers[self._mode][switch].up_callback()
+		
 
 class Notifier:
 	LONG_PRESS_DURATION = 0.8
 	DOUBLE_PRESS_DURATION = 0.5
 
-	def __init__(self, event_types: list[EventType], callback: Callable[[FootSwitchEvent], None]):
+	def __init__(self, event_types: EventType, callback: Callable[[FootSwitchEvent], None]):
 		self._event_types = event_types
 		self._callback = callback
-		self._down_event = asyncio.Event()
-		self._up_event = asyncio.Event()
+		self._down_event = threading.Event()
+		self._up_event = threading.Event()
+		self._killed = threading.Event()
+		threading.Thread(target=self.run).start()
+
+	def __del__(self):
+		self._killed.set()
 
 	def down_callback(self) -> None:
 		self._down_event.set()
@@ -112,47 +109,49 @@ class Notifier:
 	def up_callback(self) -> None:
 		self._up_event.set()
 
-	async def start(self) -> None:
-		while True:
-			self._down_event.wait()
-			self._down_event.reset()
-			self.notify(EventType.DOWN)
+	def run(self) -> None:
+		logger.info("Running event loop")
+		while not self._killed.is_set():
+			self._await_down()
+			up = self._await_up(self.LONG_PRESS_DURATION)
+			if not up:
+				self.notify(EventType.LONG_PRESS)
+				self._await_up()
+				continue
 
-			asyncio.create_task(self.notify_up(!bool(self._event_types & EventType.DOUBLE_PRESS)))
-			asyncio.create_task(self.notify_long_press())
+			press_event = EventType.PRESS
+
 			if self._event_types & EventType.DOUBLE_PRESS:
-				asyncio.create_task(self.notify_press_or_double_press())
+				if self._await_down(self.DOUBLE_PRESS_DURATION):
+					press_event = EventType.DOUBLE_PRESS
+					self._await_up()
 
-	async def notify_up(self, notify_press: bool) -> None:
-		self._up_event.wait()
-		self._up_event.reset()
-		self.notify(EventType.UP)
-		if notify_press:
-			self.notify(EventType.PRESS)
+			self.notify(press_event)
 
-	async def notify_long_press(self) -> None:
-		try:
-			asyncio.wait_for(self._up_event, LONG_PRESS_DURATION)
-		except:
-			# if up hasn't occurred over duration, it was a long press
-			self.notify(EventType.LONG_PRESS)
+		logger.info("Event loop killed")
 
-	async def notify_press_or_double_press(self):
-		try:
-			asyncio.wait_for(self._down_event, DOUBLE_PRESS_DURATION)
-			self.notify(EventType.DOUBLE_PRESS)
-		except:
-			self.notify(EventType.PRESS)
+			
+	def _await_down(self, timeout=None):{}
+		down = self._down_event.wait(timeout)
+		if down:
+			self.notify(EventType.DOWN)
+			self._down_event.clear()
+		return down
+
+	def _await_up(self, timeout=None):
+		up = self._up_event.wait(timeout)
+		if up:
+			self.notify(EventType.UP)
+			self._up_event.clear()
+		return up
 
 	def notify(self, event_type):
 		if self._event_types & event_type:
-			self._callback()
-
-
+			self._callback(event_type)
 
 
 def value_to_switch(value: int) -> FootSwitch:
-	switch = {
+	return {
 		1: FootSwitch.ONE,
 		2: FootSwitch.TWO,
 		3: FootSwitch.THREE,
@@ -165,6 +164,4 @@ def value_to_switch(value: int) -> FootSwitch:
 		0: FootSwitch.TEN,
 		10: FootSwitch.DOWN,
 		11: FootSwitch.UP,
-	}
-
-	return switch[value]
+	}[value]

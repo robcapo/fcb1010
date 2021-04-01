@@ -1,12 +1,10 @@
-from _Framework.ControlSurface import ControlSurface
-from _Framework.InputControlElement import InputControlElement, MIDI_CC_TYPE
-from _Framework.Signal import Slot
+from ableton.v2.control_surface import ControlSurface
 from enum import Enum
-from AFCB.Events import FootSwitchEventBus, FootSwitch, EventType
+from .Events import FootSwitchEventBus, FootSwitch, EventType, Notifier
 import logging
 import Live
 from random import randint
-from threading import Timer
+import threading
 import sys
 
 logger = logging.getLogger(__name__)
@@ -24,19 +22,20 @@ class FcbSurface(ControlSurface):
 
 	def __init__(self, c_instance, *a, **k):
 		(super(FcbSurface, self).__init__)(c_instance, *a, **k)
-		self.log_message("Initializing FcbSurface")
-		self.log_message("Python version")
-		self.log_message(sys.version)
-		self.log_message("Version info.")
-		self.log_message(sys.version_info)
+		logger.info("Initializing FcbSurface")
+		logger.info("Python version")
+		logger.info(sys.version)
+		logger.info("Version info.")
+		logger.info(sys.version_info)
 		self.__c_instance = c_instance
 
 		with self.component_guard():
 			self._event_bus = FootSwitchEventBus()
-			self._event_bus.subscribe(EventType.DOWN, FootSwitch.ONE, self.rand_light_on)
-			self._event_bus.subscribe(EventType.DOWN, FootSwitch.TWO, self.rand_light_off)
-			self._event_bus.subscribe(EventType.DOWN, FootSwitch.THREE, self.all_lights_on)
-			self._event_bus.subscribe(EventType.DOWN, FootSwitch.FOUR, self.all_lights_off)
+			self._event_bus.subscribe(1, FootSwitch.ONE, EventType.PRESS, self.rand_light_on)
+			self._event_bus.subscribe(1, FootSwitch.TWO, EventType.PRESS, self.rand_light_off)
+			self._event_bus.subscribe(1, FootSwitch.THREE, EventType.PRESS | EventType.DOUBLE_PRESS | EventType.LONG_PRESS, self.lights_on)
+			self._event_bus.subscribe(1, FootSwitch.FOUR, EventType.PRESS, self.all_lights_off)
+			self._event_bus.set_mode(1)
 
 			self.add_received_midi_listener(self._event_bus.midi_callback)
 
@@ -55,23 +54,26 @@ class FcbSurface(ControlSurface):
 	def send_cc(self, identifier, value):
 		self.__c_instance.send_midi((CC_MSG, identifier, value))
 
-	def input_callback(self, *a, **k):
-		self.log_message("Callback called with {} and {}".format(a, k))
-
-	def rand_light_on(self):
+	def rand_light_on(self, *a):
 		self.light_on(randint(0, 9))
 	
-	def rand_light_off(self):
+	def rand_light_off(self, *a):
 		self.light_off(randint(0, 9))
 
-	def all_lights_off(self):
+	def all_lights_off(self, *a):
 		for i in range(1, 23):
 			if i == 10:
 				i = 0
 			self.light_off(i)
 
-	def all_lights_on(self):
-		for i in range(1, 23):
-			if i == 10:
-				i = 0
-			self.light_on(i)
+	def lights_on(self, event_type):
+		logger.info("Event type was {}".format(event_type))
+		if event_type == EventType.PRESS:
+			self.rand_light_on()
+		elif event_type == EventType.DOUBLE_PRESS:
+			self.all_lights_off()
+		elif event_type == EventType.LONG_PRESS:
+			for i in range(1, 23):
+				if i == 10:
+					i = 0
+				self.light_on(i)
