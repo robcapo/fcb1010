@@ -38,7 +38,7 @@ class FootSwitch(Enum):
 	UP = 11
 	DOWN = 12
 
-class FootSwitchEvent(object):
+class FootSwitchEvent:
 	"""An event that happens to a foot switch"""
 
 	def __init__(self, switch, event_type):
@@ -49,7 +49,7 @@ class FootSwitchEvent(object):
 		return "FootSwitchEvent: {} {}".format(self.switch.name, self.type.name)
 
 
-class FootSwitchEventBus(object):
+class FootSwitchEventBus:
 	"""
 	Handles all the events of the 10 numbered foot switches + UP + DOWN.
 	Does not handle expression pedal events.
@@ -131,7 +131,7 @@ class Notifier:
 		logger.info("Event loop killed")
 
 			
-	def _await_down(self, timeout=None):{}
+	def _await_down(self, timeout=None):
 		down = self._down_event.wait(timeout)
 		if down:
 			self.notify(EventType.DOWN)
