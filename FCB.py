@@ -1,7 +1,8 @@
 from ableton.v2.control_surface import ControlSurface
 from enum import Enum
-from .Events import FootSwitchEventBus, FootSwitch, EventType, Notifier
-from .LED import LEDController, FAST
+from .events import FootSwitchEventBus, FootSwitch, EventType, Notifier
+from .led import LEDController, FAST_BLINK
+from .session import Session
 import logging
 import Live
 from random import randint
@@ -32,14 +33,10 @@ class FcbSurface(ControlSurface):
 		with self.component_guard():
 			self._leds = LEDController(self.send_cc)
 			self._event_bus = FootSwitchEventBus()
-			self._event_bus.subscribe(1, FootSwitch.ONE, EventType.PRESS, self.rand_light_on)
-			self._event_bus.subscribe(1, FootSwitch.TWO, EventType.PRESS, self.rand_light_off)
-			self._event_bus.subscribe(1, FootSwitch.THREE, EventType.PRESS | EventType.DOUBLE_PRESS | EventType.LONG_PRESS, self.lights_on)
-			self._event_bus.subscribe(1, FootSwitch.FOUR, EventType.PRESS, self.all_lights_off)
-			self._event_bus.subscribe(1, FootSwitch.FIVE, EventType.PRESS | EventType.LONG_PRESS, self.blink_rand_light)
-			self._event_bus.set_mode(1)
-
+			self._session = Session(self._leds, self._event_bus)
 			self.add_received_midi_listener(self._event_bus.midi_callback)
+
+
 
 
 
@@ -53,9 +50,11 @@ class FcbSurface(ControlSurface):
 
 	def blink_rand_light(self, event_type):
 		if event_type == EventType.PRESS:
-			self._leds.blink_on(randint(0, 9))
+			self._leds.blink_on(7)
+		elif event_type == EventType.LONG_PRESS:
+			self._leds.blink_on(7, FAST_BLINK)
 		else:
-			self._leds.blink_on(randint(0, 9), FAST)
+			self._leds.on(7)
 
 	def rand_light_on(self, *a):
 		self._leds.on(randint(0, 9))
