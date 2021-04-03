@@ -157,19 +157,26 @@ class Notifier:
 		if event_type in self._callbacks:
 			self._callbacks[event_type](event_type)
 
-def numbered_footswitches():
+def bottom_row():
 	return [
 		FootSwitch.ONE,
 		FootSwitch.TWO,
 		FootSwitch.THREE,
 		FootSwitch.FOUR,
 		FootSwitch.FIVE,
+	]
+
+def top_row():
+	return [
 		FootSwitch.SIX,
 		FootSwitch.SEVEN,
 		FootSwitch.EIGHT,
 		FootSwitch.NINE,
 		FootSwitch.TEN,
 	]
+
+def numbered_footswitches():
+	return bottom_row() + top_row()
 
 def value_to_switch(value: int) -> FootSwitch:
 	return {

@@ -1,5 +1,5 @@
 from .led import LEDController
-from .events import FootSwitchEventBus, FootSwitch, EventType, numbered_footswitches
+from .events import FootSwitchEventBus, FootSwitch, EventType, bottom_row, top_row
 from functools import partial
 from typing import Callable
 import Live
@@ -48,17 +48,20 @@ class Track:
 	def _update_name(self):
 		if "fcb" in self._track.name and not self._controlling:
 			logger.info("Controlling track {}".format(self._track.name))
+			self._controlling = True
 			self._track.add_devices_listener(self._update_devices)
 			self._update_devices()
 		if "fcb" not in self._track.name and self._controlling:
 			logger.info("Releasing track {}".format(self._track.name))
+			self._controlling = False
 			self._track.remove_devices_listener(self._update_devices)
 			self._devices = {}
 
 	def _update_devices(self):
-		footswitches = [fs for fs in numbered_footswitches()]
+		footswitches = [fs for fs in bottom_row()]
 		fs_ind = 0
 		self._devices = []
+		self._radio = None
 		for device in self._track.devices:
 			logger.info("Adding new device {} with name {}".format(device._live_ptr, device.name))
 			self._devices.append(Stomp(footswitches[fs_ind], device, self._leds, self._events))
@@ -67,13 +70,23 @@ class Track:
 			if fs_ind == len(footswitches):
 				break
 
+		for device in self._track.devices:
+			if "fcbradio" in device.name:
+				if isinstance(device, Live.RackDevice.RackDevice):
+					if device.can_have_chains:
+						self.radio = Radio(device.chains[0].devices, self._leds, self._events)
+					else:
+						logger.warning("Cannot control radio device {} because it does not have chains".format(device.name))
+				else:
+					logger.warning("Cannot control radio device {} because it is not a rack".format(device.name))
+
+
 class Stomp:
 	def __init__(self, footswitch: FootSwitch, device: Live.Device.Device, leds: LEDController, events: FootSwitchEventBus):
 		self._footswitch = footswitch
 		for p in device.parameters:
 			if p.name == "Device On":
 				self._on = p
-			logger.info("Device parameter {} value {}".format(p.name, p.value))
 		self._led = DeviceEnabledLED(device, partial(leds.on, footswitch.led_value()), partial(leds.off, footswitch.led_value()))
 		events.get_notifier(footswitch).set_callback(EventType.PRESS, self._toggle)
 
@@ -82,6 +95,37 @@ class Stomp:
 			self._on.value = 0.0
 		else:
 			self._on.value = 1.0
+
+class Radio:
+	"""Group of footswitches"""
+	def __init__(self, devices, leds: LEDController, events: FootSwitchEventBus):
+		if len(devices) > 5:
+			logger.warning("Radio can only control 5 devices from top row. Ignoring the rest.")
+
+		self._leds = []
+		self._ons = []
+		footswitches = top_row()
+		fs_ind = 0
+		for device in devices:
+			self._leds.append(DeviceEnabledLED(
+				device, 
+				partial(leds.on, footswitches[fs_ind].led_value()),
+				partial(leds.off, footswitches[fs_ind].led_value()),
+			))
+			for p in device.parameters:
+				if p.name == "Device On":
+					self._ons.append(p)
+			events.get_notifier(footswitches[fs_ind]).set_callback(EventType.PRESS, partial(self.activate, fs_ind))
+			fs_ind += 1
+			if fs_ind == len(footswitches):
+				break
+
+	def activate(self, ind, *a):
+		for i, on in enumerate(self._ons):
+			if i == ind:
+				on.value = 1.0
+			else:
+				on.value = 0.0
 
 class DeviceEnabledLED:
 	def __init__(self, device, on_cb: Callable, off_cb: Callable):
