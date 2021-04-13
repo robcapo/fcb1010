@@ -14,18 +14,18 @@ logger = logging.getLogger(__name__)
 
 # Foot switch identifier
 class FootSwitch(Enum):
-	ONE = 1
-	TWO = 2
-	THREE = 3
-	FOUR = 4
-	FIVE = 5
-	SIX = 6
-	SEVEN = 7
-	EIGHT = 8
-	NINE = 9
-	TEN = 10
-	UP = 11
-	DOWN = 12
+	ONE 	= 1
+	TWO 	= 2
+	THREE 	= 3
+	FOUR 	= 4
+	FIVE 	= 5
+	SIX 	= 6
+	SEVEN 	= 7
+	EIGHT 	= 8
+	NINE 	= 9
+	TEN 	= 10
+	UP 		= 11
+	DOWN 	= 12
 
 	def led_value(self):
 		if self in [FootSwitch.UP, FootSwitch.DOWN]:
@@ -36,15 +36,15 @@ class FootSwitch(Enum):
 
 
 # Types of events that can happen to a foot switch on the pedal
-class EventType(IntEnum):
+class EventType(Enum):
 	# Physical events, foot switch went down or up
-	DOWN 			= 1 << 0
-	UP 				= 1 << 1
+	DOWN 			= 1
+	UP 				= 2
 
 	# Abstract events based on the timing of downs and ups
-	PRESS 			= 1 << 2
-	LONG_PRESS 		= 1 << 3
-	DOUBLE_PRESS 	= 1 << 4
+	PRESS 			= 3
+	LONG_PRESS 		= 4
+	DOUBLE_PRESS 	= 5
 
 class FootSwitchEventType:
 	"""An event that happens to a foot switch"""
@@ -67,18 +67,41 @@ class FootSwitchEventSpec:
 	def get_events(self):
 		return self._events
 
+class Layout:
+	"""
+	Represents a layout of callbacks for the footswitches on the board.
+	"""
+	def __init__(self):
+		self._callbacks = {}
+
+	def listen(self, footswitch: FootSwitch, event_type: EventType, cb):
+		if footswitch not in self._callbacks:
+			self._callbacks[footswitch] = {}
+		self._callbacks[footswitch][event_type] = cb
+
+	def get_callbacks(self):
+		return self._callbacks
+
+	def union_with(self, other):
+		self._callbacks.update(other._callbacks)
 
 class FootSwitchEventBus:
 	"""
 	Handles all the events of the 10 numbered foot switches + UP + DOWN.
 	Does not handle expression pedal events.
 	"""
-
 	def __init__(self):
 		self._notifiers = {switch: Notifier() for switch in FootSwitch}
 
-	def get_notifier(self, footswitch: FootSwitch):
-		return self._notifiers[footswitch]
+	def install(self, layout: Layout):
+		for footswitch, cb_map in layout.get_callbacks().items():
+			for event_type, cb in cb_map.items():
+				self._notifiers[footswitch].set_callback(event_type, cb)
+
+	def uninstall(self, layout: Layout):
+		for footswitch, cb_map in layout.get_callbacks().items():
+			for event_type in cb_map.keys():
+				self._notifiers[footswitch].clear_callback(event_type)
 
 	def midi_callback(self, byte1, byte2, byte3, *a):
 		if byte1 == CC_BYTE:
@@ -101,15 +124,11 @@ class Notifier:
 	def __del__(self):
 		self._killed.set()
 
-	def set_callback(self, event_types: EventType, callback: Callable[[EventType], None]) -> None:
-		for event in EventType:
-			if event_types & event:
-				self._callbacks[event] = callback
+	def set_callback(self, event_type: EventType, callback: Callable[[EventType], None]) -> None:
+		self._callbacks[event_type] = callback
 
-	def clear_callback(self, event_types: EventType):
-		for event in EventType:
-			if event_types & event:
-				del self._callbacks[event]
+	def clear_callback(self, event_type: EventType):
+		del self._callbacks[event_type]
 
 	def run(self) -> None:
 		logger.info("Running event loop")
