@@ -52,18 +52,18 @@ class EffectsMode:
 
 	def _update_devices(self):
 		try:
+			for stomp in self._stomps: stomp.clear()
+			self._patch.clear()
+
 			for stomp, device in zip(self._stomps, filter(self.non_looper, self._track.devices)):
-				stomp.clear()
 				logger.info("Adding new {} device with class {} and name {}".format(device.type, device.class_name, device.name))
 				stomp.listen_to_device(device)
 			for device in self._track.devices:
 				if "#1hot" in device.name:
-					self.patch.clear()
-					self.patch.listen_to_rack(device)
+					self._patch.listen_to_rack(device)
 					break
 		except:
-			e = sys.exc_info()[0]
-			logger.info("Failed to update devices, is track gone? {}".format(e))
+			logger.info("Failed to update devices, is track gone? {}".format(sys.exc_info()[1]))
 
 	def non_looper(self, device):
 		return device.class_name != "Looper"
