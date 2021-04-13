@@ -28,6 +28,7 @@ class Session:
 			for track_ptr in list(self._tracks.keys()):
 				if track_ptr not in tracks:
 					logger.info("Removing track")
+					self._tracks[track_ptr].clear()
 					del self._tracks[track_ptr]
 
 
@@ -43,7 +44,11 @@ class Track:
 		if "fcb" in self._track.name and not self._controlling:
 			logger.info("Controlling track {}".format(self._track.name))
 			self._fx.set_track(self._track)
+			self._controlling = True
 		if "fcb" not in self._track.name and self._controlling:
 			logger.info("Releasing track {}".format(self._track.name))
 			self._controlling = False
-			self._fx.clear(self._track)
+			self.clear()
+
+	def clear(self):
+		self._fx.clear(self._track)

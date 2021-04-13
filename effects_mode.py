@@ -47,14 +47,13 @@ class EffectsMode:
 				self._track.remove_devices_listener(self._update_devices)
 		except:
 			logger.warning("Failed to remove devices listener. Track must be deleted")
-		self._update_devices()
+		
+		for stomp in self._stomps: stomp.clear()
+		self._patch.clear()
 		self._track = None
 
 	def _update_devices(self):
 		try:
-			for stomp in self._stomps: stomp.clear()
-			self._patch.clear()
-
 			for stomp, device in zip(self._stomps, filter(self.non_looper, self._track.devices)):
 				logger.info("Adding new {} device with class {} and name {}".format(device.type, device.class_name, device.name))
 				stomp.listen_to_device(device)
