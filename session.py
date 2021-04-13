@@ -1,6 +1,5 @@
 from .footswitch import FootSwitchEventBus
 from .led import LEDController
-from .effects_mode import EffectsMode
 import Live
 import logging
 
@@ -8,47 +7,36 @@ import logging
 logger = logging.getLogger(__name__)
 
 class Session:
-	def __init__(self, leds: LEDController, footswitch_events: FootSwitchEventBus):
-		self._leds = leds
+	"""
+	Keeps track of all the Tracks in the set. Will call tracks_updated_callback
+	whenever the tracks change
+	"""
+	def __init__(self, tracks_updated_callback):
 		self._tracks = {}
-		self._fx = EffectsMode(leds)
-		footswitch_events.install(self._fx.get_layout())
+		self._tracked_tracks = []
+		self._tracks_updated_callback = tracks_updated_callback
 		self._song = Live.Application.get_application().get_document()
 		self._song.add_tracks_listener(self._update_tracks)
 		self._update_tracks()
+
+	def get_tracks(self):
+		return self._tracked_tracks
 
 	def _update_tracks(self):
 		if len(self._song.tracks) > len(self._tracks):
 			for track in self._song.tracks:
 				if track._live_ptr not in self._tracks:
 					logger.info("Adding new track {} with name {}".format(track._live_ptr, track.name))
-					self._tracks[track._live_ptr] = Track(track, self._fx)
-		else:
+					self._tracks[track._live_ptr] = track
+					track.add_name_listener(self._update_tracks)
+		elif len(self._song.tracks) < len(self._tracks):
 			tracks = {t._live_ptr: t for t in self._song.tracks}
 			for track_ptr in list(self._tracks.keys()):
 				if track_ptr not in tracks:
-					logger.info("Removing track")
-					self._tracks[track_ptr].clear()
+					logger.info("Removing track {}".format(track_ptr))
 					del self._tracks[track_ptr]
 
-
-class Track:
-	def __init__(self, track: Live.Track.Track, fx: EffectsMode):
-		self._track = track
-		self._controlling = False
-		self._fx = fx
-		self._track.add_name_listener(self._update_name)
-		self._update_name()
-
-	def _update_name(self):
-		if "fcb" in self._track.name and not self._controlling:
-			logger.info("Controlling track {}".format(self._track.name))
-			self._fx.set_track(self._track)
-			self._controlling = True
-		if "fcb" not in self._track.name and self._controlling:
-			logger.info("Releasing track {}".format(self._track.name))
-			self._controlling = False
-			self.clear()
-
-	def clear(self):
-		self._fx.clear(self._track)
+		tracked_tracks = [t for t in self._tracks.values() if "#fcb" in t.name]
+		if tracked_tracks != self._tracked_tracks:
+			self._tracked_tracks = tracked_tracks
+			self._tracks_updated_callback()

@@ -1,5 +1,6 @@
 from .led import LEDController
 from .footswitch import FootSwitchEventType, FootSwitch, EventType, Layout, numbered_footswitches, bottom_row, top_row
+from .board import Mode
 from functools import partial
 import Live
 import logging
@@ -7,7 +8,7 @@ import sys
 
 logger = logging.getLogger(__name__)
 
-class EffectsMode:
+class EffectsMode(Mode):
 	"""
 	Mode for messing with tone
 
@@ -19,6 +20,7 @@ class EffectsMode:
 	[6-10]: OneHotRack links to first rack device with #1hot in name
 	"""
 	def __init__(self, leds: LEDController):
+		super(EffectsMode, self).__init__(leds)
 		self._leds = leds
 		self._stomps = [Stomp(fs, leds) for fs in bottom_row()]
 		self._patch = OneHotRack(top_row(), leds)

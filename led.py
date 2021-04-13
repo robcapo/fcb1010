@@ -35,15 +35,17 @@ class LEDController:
 	can also be used to redraw the LEDs, e.g. if the board lost power
 	temporarily.
 	"""
-	def __init__(self, send_cc):
+	def __init__(self, send_cc, initialize_off = []):
 		self._send_cc = send_cc
 		self._kill_events = {}
 		self._event_locks = {}
 		self._last_commands = {}
 		self._is_active = True
+		for value in initialize_off:
+			self.off(value)
 
-	def copy(self):
-		return LEDControler(self._send_cc)
+	def copy(self, initialize_off = []):
+		return LEDController(self._send_cc, initialize_off)
 
 	@command
 	def on(self, value):
@@ -71,7 +73,7 @@ class LEDController:
 
 	def activate(self):
 		self._is_active = True
-		for f in self._last_commands:
+		for f in self._last_commands.values():
 			f()
 
 	def deactivate(self):

@@ -1,7 +1,8 @@
 from ableton.v2.control_surface import ControlSurface
-from .footswitch import FootSwitchEventBus
+from .footswitch import FootSwitchEventBus, numbered_footswitches
 from .led import LEDController
-from .session import Session
+from .effects_mode import EffectsMode
+from .board import Board
 import logging
 import Live
 import sys
@@ -29,9 +30,12 @@ class FcbSurface(ControlSurface):
 		with self.component_guard():
 			leds = LEDController(self.send_cc)
 			event_bus = FootSwitchEventBus()
-			self._session = Session(leds, event_bus)
+			
+			self._board = Board(leds, event_bus)
+			self._board.add_mode(EffectsMode(leds.copy([f.led_value() for f in numbered_footswitches()])))
 
 			self.add_received_midi_listener(event_bus.midi_callback)
+			logger.info("Added midi received listener")
 
 
 	def build_midi_map(self, midi_map_handle):
