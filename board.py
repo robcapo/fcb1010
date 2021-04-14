@@ -34,8 +34,10 @@ class Board:
 		l.listen(FootSwitch.DOWN, EventType.PRESS, self._next_mode)
 		self._footswitch_events.install(l)
 		
-		self._session = Session(self._tracks_updated)
 		self._current_track = None
+		self._session = Session()
+		self._session.add_callback(self._tracks_updated)
+		self._tracks_updated()
 
 
 	def add_mode(self, mode: Mode):

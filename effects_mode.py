@@ -131,6 +131,7 @@ class OneHotRack:
 		for footswitch, led, device in zip(self._footswitches, self._leds, devices):
 			led.listen_to_device(device)
 			for p in device.parameters:
+				logger.info(p)
 				if p.name == "Device On":
 					self._ons[footswitch] = p
 
@@ -141,7 +142,9 @@ class OneHotRack:
 			led.clear()
 
 	def pressed(self, footswitch, *a):
-		for fs, on in enumerate(self._ons):
+		if footswitch not in self._ons:
+			return
+		for fs, on in self._ons.items():
 			if fs == footswitch:
 				on.value = 1.0
 			else:
