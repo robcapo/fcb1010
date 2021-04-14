@@ -96,7 +96,6 @@ class FootSwitchEventBus:
 	def install(self, layout: Layout):
 		for footswitch, cb_map in layout.get_callbacks().items():
 			for event_type, cb in cb_map.items():
-				logger.info("Installing {} {} {}".format(footswitch, event_type, cb))
 				self._notifiers[footswitch].set_callback(event_type, cb)
 
 	def uninstall(self, layout: Layout):
@@ -210,6 +209,6 @@ def value_to_switch(value: int) -> FootSwitch:
 		8: FootSwitch.EIGHT,
 		9: FootSwitch.NINE,
 		0: FootSwitch.TEN,
-		10: FootSwitch.DOWN,
-		11: FootSwitch.UP,
+		10: FootSwitch.UP,
+		11: FootSwitch.DOWN,
 	}[value]

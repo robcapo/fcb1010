@@ -79,7 +79,7 @@ class Board:
 			self._modes[self._current_mode].deactivate()
 			self._footswitch_events.uninstall(self._modes[self._current_mode].get_layout())
 			if self._current_mode < len(self._mode_led_values):
-				leds.off(self._mode_led_values[self._current_mode])
+				self._leds.off(self._mode_led_values[self._current_mode])
 		self._modes[ind].activate()
 		self._footswitch_events.install(self._modes[ind].get_layout())
 		self._current_mode = ind
