@@ -28,6 +28,8 @@ class Board:
 		self._modes = []
 		self._current_mode = None
 		self._mode_led_values = [20, 21, 22]
+		for val in self._mode_led_values:
+			self._leds.off(val)
 		self._footswitch_events = footswitch_events
 		l = Layout()
 		l.listen(FootSwitch.UP, EventType.PRESS, self._prev_mode)

@@ -26,6 +26,8 @@ class FcbSurface(ControlSurface):
 		logger.info(sys.version)
 		logger.info("Version info.")
 		logger.info(sys.version_info)
+		logger.info("Executable {}".format(sys.executable))
+		logger.info("Path {}".format(sys.path))
 		self.__c_instance = c_instance
 
 		with self.component_guard():

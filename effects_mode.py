@@ -3,8 +3,9 @@ from .footswitch import FootSwitchEventType, FootSwitch, EventType, Layout, numb
 from .board import Mode
 from functools import partial
 import Live
-import logging
 import sys
+import logging
+
 
 logger = logging.getLogger(__name__)
 
@@ -131,7 +132,6 @@ class OneHotRack:
 		for footswitch, led, device in zip(self._footswitches, self._leds, devices):
 			led.listen_to_device(device)
 			for p in device.parameters:
-				logger.info(p)
 				if p.name == "Device On":
 					self._ons[footswitch] = p
 
