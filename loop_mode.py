@@ -19,22 +19,42 @@ class LoopMode(Mode):
 	"""
 	def __init__(self, leds: LEDController):
 		super(LoopMode, self).__init__(leds)
-		self._song = Live.Application.get_application().get_document()
 		self._leds = leds
+		self._song = Live.Application.get_application().get_document()
+		self._song.add_metronome_listener(self._metronome_changed)
+		self._metronome_changed()
 		self._looper1 = MaxLooper()
 		self._looper2 = MaxLooper()
 		self._bars_param = None
 
 	def get_layout(self):
 		l = Layout()
+		# looper buttons
 		l.listen(FootSwitch.ONE, EventType.DOWN, self._looper1.start)
 		l.listen(FootSwitch.THREE, EventType.DOWN, self._looper2.start)
+		
+		# bar quantization
 		l.listen(FootSwitch.SIX, EventType.PRESS, partial(self._set_bars, 0))
 		l.listen(FootSwitch.SEVEN, EventType.PRESS, partial(self._set_bars, 1))
 		l.listen(FootSwitch.EIGHT, EventType.PRESS, partial(self._set_bars, 2))
 		l.listen(FootSwitch.NINE, EventType.PRESS, partial(self._set_bars, 3))
 		l.listen(FootSwitch.TEN, EventType.PRESS, partial(self._set_bars, 4))
+
+		# tap tempo
+		def tap(*a):
+			self._song.tap_tempo()
+		l.listen(FootSwitch.FIVE, EventType.DOWN, tap)
+		l.listen(FootSwitch.FIVE, EventType.LONG_PRESS, self._toggle_metronome)
 		return l
+
+	def _metronome_changed(self):
+		if self._song.metronome:
+			self._leds.on(FootSwitch.FIVE.led_value())
+		else:
+			self._leds.off(FootSwitch.FIVE.led_value())
+
+	def _toggle_metronome(self, *a):
+		self._song.metronome = not self._song.metronome
 
 	def _set_bars(self, value, *a):
 		self._looper1.set_bars(value)

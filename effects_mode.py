@@ -2,6 +2,7 @@ from .led import LEDController
 from .footswitch import FootSwitchEventType, FootSwitch, EventType, Layout, numbered_footswitches, bottom_row, top_row
 from .board import Mode
 from functools import partial
+from ableton.v2.base import liveobj_valid
 import Live
 import sys
 import logging
@@ -166,10 +167,8 @@ class DeviceEnabledLED:
 
 	def clear(self):
 		if self._device is not None:
-			try:
+			if liveobj_valid(self._device):
 				self._device.remove_is_active_listener(self._update_state)
-			except:
-				logger.info("Failed to remove is_active listener on footswitch {}. Device must be deleted.".format(self._footswitch))
 			self._device = None
 		self._update_state()
 

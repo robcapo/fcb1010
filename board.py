@@ -2,7 +2,7 @@ from .led import LEDController
 from .footswitch import FootSwitchEventBus, Layout, FootSwitch, EventType
 from .session import Session
 import logging
-
+import Live
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +19,7 @@ class Mode:
 	def get_layout(self):
 		raise NotImplementedError()
 
-	def set_track(self):
+	def set_track(self, track: Live.Track.Track):
 		raise NotImplementedError()
 
 class Board:

@@ -119,7 +119,7 @@ class Notifier:
 		self._down_event = threading.Event()
 		self._up_event = threading.Event()
 		self._killed = threading.Event()
-		threading.Thread(target=self.run).start()
+		threading.Thread(target=self.run, daemon=True).start()
 
 	def __del__(self):
 		self._killed.set()

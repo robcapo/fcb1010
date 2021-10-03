@@ -3,10 +3,12 @@ from .footswitch import FootSwitchEventBus, numbered_footswitches
 from .led import LEDController
 from .effects_mode import EffectsMode
 from .loop_mode import LoopMode
+from .session_mode import SessionMode
 from .board import Board
 import logging
 import Live
 import sys
+import inspect
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +38,8 @@ class FcbSurface(ControlSurface):
 			
 			self._board = Board(leds, event_bus)
 			self._board.add_mode(EffectsMode(leds.copy([f.led_value() for f in numbered_footswitches()])))
-			self._board.add_mode(LoopMode(leds.copy([f.led_value() for f in numbered_footswitches()])))
+			# self._board.add_mode(LoopMode(leds.copy([f.led_value() for f in numbered_footswitches()])))
+			self._board.add_mode(SessionMode(leds.copy([f.led_value() for f in numbered_footswitches()]), self.schedule_message))
 
 			self.add_received_midi_listener(event_bus.midi_callback)
 			logger.info("Added midi received listener")
@@ -49,3 +52,9 @@ class FcbSurface(ControlSurface):
 
 	def send_cc(self, identifier, value):
 		self.__c_instance.send_midi((CC_MSG, identifier, value))
+
+def inspect_and_log(obj, indent = 0):
+	for name, memb in inspect.getmembers(obj):
+		logger.info("{}{}{}".format(indent*"  ", name, memb))
+		if inspect.ismodule(memb):
+			inspect_and_log(memb, indent + 1)
