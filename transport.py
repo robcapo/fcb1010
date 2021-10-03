@@ -19,6 +19,7 @@ class Metronome:
 		self._leds = leds
 		self._footswitch = footswitch
 		self._song.add_metronome_listener(self._update)
+		self._times = []
 		self._update()
 
 	def get_layout(self):
@@ -28,7 +29,14 @@ class Metronome:
 		return l
 
 	def tapped(self, *a):
-		pass
+		t = time()
+		if len(self._times) > 0:
+			if t - self._times[len(self._times) - 1] > 2:
+				self._times = []
+		self._times.append(t)
+		if len(self._times) > 2:
+			self._song.tempo = 120 / (self._times[len(self._times) - 1] - self._times[len(self._times) - 3])
+
 
 	def held(self, *a):
 		logger.info("Held and metronome value is {} and opposite is {}".format(self._song.metronome, not self._song.metronome))

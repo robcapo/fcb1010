@@ -173,6 +173,7 @@ class Notifier:
 		return up
 
 	def _notify(self, event_type):
+		logger.info("Notify {}".format(event_type))
 		if event_type in self._callbacks:
 			self._callbacks[event_type](event_type)
 
