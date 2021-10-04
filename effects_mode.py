@@ -41,6 +41,22 @@ class EffectsMode(Mode):
 		self._track.add_devices_listener(self._update_devices)
 		self._update_devices()
 
+	def _update_devices(self):
+		self._clear_devices()
+		try:
+			for stomp, device in zip(self._stomps, filter(self._non_looper, self._track.devices)):
+				logger.info("Adding new {} device with class {} and name {}".format(device.type, device.class_name, device.name))
+				stomp.listen_to_device(device)
+			for device in self._track.devices:
+				if "#1hot" in device.name:
+					self._patch.listen_to_rack(device)
+					break
+		except:
+			logger.info("Failed to update devices, is track gone? {}".format(sys.exc_info()[1]))
+
+	def _non_looper(self, device):
+		return device.class_name != "Looper"
+
 	def clear(self, track: Live.Track.Track = None):
 		if self._track is None:
 			return
@@ -52,24 +68,12 @@ class EffectsMode(Mode):
 		except:
 			logger.warning("Failed to remove devices listener. Track must be deleted")
 		
-		for stomp in self._stomps: stomp.clear()
-		self._patch.clear()
+		self._clear_devices()
 		self._track = None
 
-	def _update_devices(self):
-		try:
-			for stomp, device in zip(self._stomps, filter(self.non_looper, self._track.devices)):
-				logger.info("Adding new {} device with class {} and name {}".format(device.type, device.class_name, device.name))
-				stomp.listen_to_device(device)
-			for device in self._track.devices:
-				if "#1hot" in device.name:
-					self._patch.listen_to_rack(device)
-					break
-		except:
-			logger.info("Failed to update devices, is track gone? {}".format(sys.exc_info()[1]))
-
-	def non_looper(self, device):
-		return device.class_name != "Looper"
+	def _clear_devices(self):
+		for stomp in self._stomps: stomp.clear()
+		self._patch.clear()
 
 
 class Stomp:

@@ -5,6 +5,7 @@ import logging
 import time
 import threading
 import queue
+import traceback
 
 CC_BYTE = 176
 DOWN_BYTE = 104
@@ -133,21 +134,25 @@ class Notifier:
 	def run(self) -> None:
 		logger.info("Running event loop")
 		while not self._killed.is_set():
-			self._await_down()
-			up = self._await_up(self.LONG_PRESS_DURATION)
-			if not up:
-				self._notify(EventType.LONG_PRESS)
-				self._await_up()
-				continue
-
-			press_event = EventType.PRESS
-
-			if EventType.DOUBLE_PRESS in self._callbacks:
-				if self._await_down(self.DOUBLE_PRESS_DURATION):
-					press_event = EventType.DOUBLE_PRESS
+			try:
+				self._await_down()
+				up = self._await_up(self.LONG_PRESS_DURATION)
+				if not up:
+					self._notify(EventType.LONG_PRESS)
 					self._await_up()
+					continue
 
-			self._notify(press_event)
+				press_event = EventType.PRESS
+
+				if EventType.DOUBLE_PRESS in self._callbacks:
+					if self._await_down(self.DOUBLE_PRESS_DURATION):
+						press_event = EventType.DOUBLE_PRESS
+						self._await_up()
+
+				self._notify(press_event)
+			except Exception:
+				logger.error('Caught exception: {}'.format(traceback.format_exc()))
+				logger.info('Restarting event loop.')
 
 		logger.info("Event loop killed")
 
