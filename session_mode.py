@@ -100,13 +100,12 @@ class TracksController:
 				return
 			for t in track.available_input_routing_types:
 				if t.display_name == routing:
-					logger.info("Scheduling set for track because {} = {} - {}".format(t.display_name, routing, t))
 					def update(typ):
 						def go():
 							track.input_routing_type = typ
-							logger.info("Setting input routing type to {} {}".format(typ, typ.display_name))
 						return go
 					self._scheduler(0, update(t))
+					break
 		return update_routing
 
 class TrackController:

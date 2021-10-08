@@ -39,7 +39,6 @@ class Metronome:
 
 
 	def held(self, *a):
-		logger.info("Held and metronome value is {} and opposite is {}".format(self._song.metronome, not self._song.metronome))
 		self._song.metronome = not self._song.metronome
 		if self._song.metronome and not self._song.is_playing:
 			self._song.continue_playing()
