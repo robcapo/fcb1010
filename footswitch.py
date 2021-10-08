@@ -134,25 +134,21 @@ class Notifier:
 	def run(self) -> None:
 		logger.info("Running event loop")
 		while not self._killed.is_set():
-			try:
-				self._await_down()
-				up = self._await_up(self.LONG_PRESS_DURATION)
-				if not up:
-					self._notify(EventType.LONG_PRESS)
+			self._await_down()
+			up = self._await_up(self.LONG_PRESS_DURATION)
+			if not up:
+				self._notify(EventType.LONG_PRESS)
+				self._await_up()
+				continue
+
+			press_event = EventType.PRESS
+
+			if EventType.DOUBLE_PRESS in self._callbacks:
+				if self._await_down(self.DOUBLE_PRESS_DURATION):
+					press_event = EventType.DOUBLE_PRESS
 					self._await_up()
-					continue
 
-				press_event = EventType.PRESS
-
-				if EventType.DOUBLE_PRESS in self._callbacks:
-					if self._await_down(self.DOUBLE_PRESS_DURATION):
-						press_event = EventType.DOUBLE_PRESS
-						self._await_up()
-
-				self._notify(press_event)
-			except Exception:
-				logger.error('Caught exception: {}'.format(traceback.format_exc()))
-				logger.info('Restarting event loop.')
+			self._notify(press_event)
 
 		logger.info("Event loop killed")
 
@@ -178,9 +174,11 @@ class Notifier:
 		return up
 
 	def _notify(self, event_type):
-		logger.info("Notify {}".format(event_type))
 		if event_type in self._callbacks:
-			self._callbacks[event_type](event_type)
+			try:
+				self._callbacks[event_type](event_type)
+			except Exception:
+				logger.error('Caught exception while notifying {}: {}'.format(event_type, traceback.format_exc()))
 
 def bottom_row():
 	return [
