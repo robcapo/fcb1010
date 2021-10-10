@@ -126,10 +126,15 @@ class TrackController:
 	def get_layout(self):
 		l = Layout()
 		l.listen(self._footswitch, EventType.DOWN, self._footswitch_down)
+		l.listen(self._footswitch, EventType.DOUBLE_PRESS, self._double_press)
 		return l
 
 	def _footswitch_down(self, *a):
 		self._clip_slot.fire()
+
+	def _double_press(self, *a):
+		if self._clip_slot.has_clip:
+			self._clip_slot.delete_clip()
 
 	def update(self):
 		if self._track is not None:
