@@ -2,6 +2,7 @@ from .board import Mode
 from .led import LEDController
 from .footswitch import FootSwitch, Layout, EventType
 from .transport import Metronome
+from functools import partial
 import logging
 import threading
 import Live
@@ -63,10 +64,10 @@ class TracksController:
 		self._scheduler = scheduler
 		self._leds = leds
 		self._track_controllers = [
-			TrackController(leds, FootSwitch.ONE),
-			TrackController(leds, FootSwitch.TWO),
-			TrackController(leds, FootSwitch.THREE),
-			TrackController(leds, FootSwitch.FOUR),
+			TrackController(leds, FootSwitch.ONE, scheduler),
+			TrackController(leds, FootSwitch.TWO, scheduler),
+			TrackController(leds, FootSwitch.THREE, scheduler),
+			TrackController(leds, FootSwitch.FOUR, scheduler),
 		]
 
 	def get_layout(self):
@@ -112,12 +113,13 @@ class TrackController:
 	"""
 	Controls a single Track
 	"""
-	def __init__(self, leds: LEDController, footswitch: FootSwitch):
+	def __init__(self, leds: LEDController, footswitch: FootSwitch, scheduler):
 		self._footswitch = footswitch
 		self._leds = leds
 		self._track = None
 		self._clip_slot = None
 		self._clip = None
+		self._scheduler = scheduler
 
 	def set_track(self, track: Live.Track.Track):
 		self._track = track
@@ -134,6 +136,11 @@ class TrackController:
 
 	def _double_press(self, *a):
 		if self._clip_slot.has_clip:
+			self._scheduler(0, self._delete_clip)
+
+	def _delete_clip(self):
+		if self._clip_slot.has_clip:
+			self._clip_slot.set_fire_button_state(False)
 			self._clip_slot.delete_clip()
 
 	def update(self):
