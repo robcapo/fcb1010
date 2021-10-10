@@ -1,5 +1,6 @@
 from .led import LEDController
-from .footswitch import FootSwitch, Layout, EventType, bottom_row
+from .footswitch import FootSwitch, Layout, EventType, bottom_row, top_row
+from .effects_mode import DeviceEnabledLED
 from .board import Mode
 
 from functools import partial
@@ -50,12 +51,15 @@ class RacksControllerMode(Mode):
 		super(RacksControllerMode, self).__init__(leds)
 		self._leds = leds
 		self._track = None
-		self._rack = None
+		self._racks = []
+		self._rack_ind = None
 		self._stomps = [RackMacroStomp(fs, leds) for fs in bottom_row()]
+		self._patches = PatchSelector(top_row(), leds, self._set_rack)
 
 	def get_layout(self):
 		l = Layout()
 		for s in self._stomps: l.union_with(s.get_layout())
+		l.union_with(self._patches.get_layout())
 		return l
 
 	def set_layout_changed_callback(self, cb):
@@ -76,30 +80,33 @@ class RacksControllerMode(Mode):
 		for device in self._track.devices:
 			device.add_name_listener(self._update_devices)
 			if "#rack" in device.name:
-				self._set_rack(device)
-				break
+				self._racks.append(device)
+
+		self._patches.set_devices(self._racks)
+		self._patches.set_device_ind(0)
 
 	def _clear_devices(self):
 		if self._track is None:
 			return
 
-		for device in self._track.devices:
+		for device in self._racks:
 			if device.name_has_listener(self._update_devices):
 				device.remove_name_listener(self._update_devices)
 
 		self._clear_rack()
+		self._racks = []
 
 
-	def _set_rack(self, rack):
+	def _set_rack(self, rack_ind):
 		self._clear_rack()
-		self._rack = rack
-		self._rack.add_parameters_listener(self._update_parameters)
+		self._rack_ind = rack_ind
+		self._racks[rack_ind].add_parameters_listener(self._update_parameters)
 		self._update_parameters()
 
 	def _update_parameters(self):
 		for stomp in self._stomps:
-			stomp.set_rack(self._rack)
-		for param in self._rack.parameters:
+			stomp.set_rack(self._racks[self._rack_ind])
+		for param in self._racks[self._rack_ind].parameters:
 			param.add_name_listener(self._update_stomps)
 		self._layout_changed_callback()
 
@@ -108,15 +115,66 @@ class RacksControllerMode(Mode):
 		self._layout_changed_callback()
 
 	def _clear_rack(self):
-		if self._rack is None:
+		logger.info("Rack ind {} racks {}".format(self._rack_ind, self._racks))
+		if self._rack_ind is None:
 			return
 
-		if self._rack.parameters_has_listener(self._update_parameters):
-			self._rack.remove_parameters_listener(self._update_parameters)
+		if self._racks[self._rack_ind].parameters_has_listener(self._update_parameters):
+			self._racks[self._rack_ind].remove_parameters_listener(self._update_parameters)
 
-		for param in self._rack.parameters:
+		for param in self._racks[self._rack_ind].parameters:
 			if param.name_has_listener(self._update_stomps):
 				param.remove_name_listener(self._update_stomps)
+
+		self._rack_ind = None
+
+class PatchSelector:
+	def __init__(self, footswitches, leds: LEDController, callback = None):
+		self._footswitches = footswitches
+		self._leds = [DeviceEnabledLED(fs, leds) for fs in footswitches]
+		self._indexes = {fs: i for i, fs in enumerate(footswitches)}
+		self._ons = {}
+		self._callback = callback
+
+	def get_layout(self):
+		layout = Layout()
+		for footswitch in self._footswitches:
+			layout.listen(footswitch, EventType.PRESS, partial(self._pressed, footswitch))
+		return layout
+
+	def set_devices(self, devices):		
+		self.clear()
+
+		if len(devices) > len(self._footswitches):
+			logger.warning(
+				"Patch can only control {} devices but received {}. Ignoring the rest."
+					.format(len(self._footswitches), len(devices)))
+
+		for footswitch, led, device in zip(self._footswitches, self._leds, devices):
+			led.listen_to_device(device)
+			for p in device.parameters:
+				if p.name == "Device On":
+					self._ons[footswitch] = p
+
+	def set_device_ind(self, device_ind):
+		if device_ind >= len(self._footswitches):
+			return
+		self._pressed(self._footswitches[device_ind])
+
+	def clear(self):
+		self._ons = {}
+		for led in self._leds:
+			led.clear()
+
+	def _pressed(self, footswitch, *a):
+		if footswitch not in self._ons:
+			return
+		for fs, on in self._ons.items():
+			if fs == footswitch:
+				on.value = 1.0
+				self._callback(self._indexes[fs])
+			else:
+				on.value = 0.0
 
 class RackMacroStomp:
 	"""
