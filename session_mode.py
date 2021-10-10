@@ -16,21 +16,21 @@ class SessionMode(Mode):
 	4 tracks immediately to its right, and each of them is taking
 	input from the set track. Like this:
 
-	[#fcb] [#sesh1] [#sesh2] [#sesh3] [#sesh4]
+	[#fcb] [#ch1] [#ch2] [#ch3] [#ch4]
 
 	#fcb will be updated to have monitoring set to In.
-	Each "#sesh" will have monitoring set to Off.
-	Each "#sesh" will have its Audio In set to #fcb Post Mixer
+	Each "#ch" will have monitoring set to Off.
+	Each "#ch" will have its Audio In set to #fcb Post Mixer
 
 	On the top row, there are three stomps. By default these
 	will toggle the first 3 FX in the device chain. Rename
 	devices to include #sesh6 #sesh7 or #sesh8 to override
 	this behavior.
 
-	[1]: Play/stop/record #sesh1
-	[2]: Play/stop/record #sesh2
-	[3]: Play/stop/record #sesh3
-	[4]: Play/stop/record #sesh4 
+	[1]: Play/stop/record #ch1
+	[2]: Play/stop/record #ch2
+	[3]: Play/stop/record #ch3
+	[4]: Play/stop/record #ch4 
 	[5]: Tap Tempo | hold to Toggle metronome
 	[6]: Stomp
 	[7]: Stomp

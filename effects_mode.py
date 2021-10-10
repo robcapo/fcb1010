@@ -46,6 +46,7 @@ class EffectsMode(Mode):
 		try:
 			for stomp, device in zip(self._stomps, filter(self._non_looper, self._track.devices)):
 				logger.info("Adding new {} device with class {} and name {}".format(device.type, device.class_name, device.name))
+				device.add_name_listener(self._update_devices)
 				stomp.listen_to_device(device)
 			for device in self._track.devices:
 				if "#1hot" in device.name:
@@ -72,6 +73,11 @@ class EffectsMode(Mode):
 		self._track = None
 
 	def _clear_devices(self):
+		if self._track is None:
+			return
+		for device in self._track.devices:
+			if device.name_has_listener(self._update_devices):
+				device.remove_name_listener(self._update_devices)
 		for stomp in self._stomps: stomp.clear()
 		self._patch.clear()
 
@@ -160,7 +166,6 @@ class DeviceEnabledLED:
 		self._on = partial(leds.on, footswitch.led_value())
 		self._off = partial(leds.off, footswitch.led_value())
 		self._device = None
-		self._footswitch = footswitch
 
 	def listen_to_device(self, device):
 		if self._device != device:

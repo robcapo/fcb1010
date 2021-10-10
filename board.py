@@ -1,6 +1,7 @@
 from .led import LEDController
 from .footswitch import FootSwitchEventBus, Layout, FootSwitch, EventType
 from .session import Session
+from functools import partial
 import logging
 import Live
 
@@ -16,6 +17,9 @@ class Mode:
 	def deactivate(self):
 		self.leds.deactivate()
 
+	def set_layout_changed_callback(self, callback):
+		pass
+
 	def get_layout(self):
 		raise NotImplementedError()
 
@@ -27,6 +31,7 @@ class Board:
 		self._leds = leds
 		self._modes = []
 		self._current_mode = None
+		self._current_mode_layout = None
 		self._mode_led_values = [20, 21, 22]
 		for val in self._mode_led_values:
 			self._leds.off(val)
@@ -43,6 +48,7 @@ class Board:
 
 
 	def add_mode(self, mode: Mode):
+		mode.set_layout_changed_callback(partial(self._refresh_layout, len(self._modes)))
 		self._modes.append(mode)
 
 		if self._current_track is not None:
@@ -85,7 +91,7 @@ class Board:
 			if self._current_mode < len(self._mode_led_values):
 				self._leds.off(self._mode_led_values[self._current_mode])
 		self._modes[ind].activate()
-		self._footswitch_events.install(self._modes[ind].get_layout())
+		self._install_mode_layout(ind)
 		self._current_mode = ind
 		if self._current_mode < len(self._mode_led_values):
 			self._leds.on(self._mode_led_values[self._current_mode])
@@ -102,3 +108,12 @@ class Board:
 			self._set_track(track)
 			# just use the first track for now
 			break
+
+	def _refresh_layout(self, ind):
+		if self._current_mode == ind:
+			self._footswitch_events.uninstall(self._current_mode_layout)
+			self._install_mode_layout(ind)
+
+	def _install_mode_layout(self, ind):
+		self._current_mode_layout = self._modes[ind].get_layout()
+		self._footswitch_events.install(self._current_mode_layout)
