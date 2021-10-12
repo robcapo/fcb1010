@@ -10,6 +10,8 @@ import traceback
 CC_BYTE = 176
 DOWN_BYTE = 104
 UP_BYTE = 105
+LEFT_EXPR_BYTE = 102
+RIGHT_EXPR_BYTE = 103
 
 logger = logging.getLogger(__name__)
 
@@ -74,12 +76,26 @@ class Layout:
 	"""
 	def __init__(self):
 		self._callbacks = {}
+		self._left_expression_callback = None
+		self._right_expression_callback = None
 
 	def listen(self, footswitch: FootSwitch, event_type: EventType, cb):
 		if footswitch not in self._callbacks:
 			self._callbacks[footswitch] = {}
 		self._callbacks[footswitch][event_type] = cb
 
+	def set_left_expression_callback(self, cb):
+		self._left_expression_callback = cb
+
+	def set_right_expression_callback(self, cb):
+		self._right_expression_callback = cb
+
+	def left_expression_callback(self):
+		return self._left_expression_callback
+
+	def right_expression_callback(self):
+		return self._right_expression_callback
+		
 	def get_callbacks(self):
 		return self._callbacks
 
@@ -93,16 +109,26 @@ class FootSwitchEventBus:
 	"""
 	def __init__(self):
 		self._notifiers = {switch: Notifier() for switch in FootSwitch}
+		self._left_expression = self._noop
+		self._right_expression = self._noop
 
 	def install(self, layout: Layout):
 		for footswitch, cb_map in layout.get_callbacks().items():
 			for event_type, cb in cb_map.items():
 				self._notifiers[footswitch].set_callback(event_type, cb)
+		if layout.left_expression_callback() is not None:
+			self._left_expression = layout.left_expression_callback()
+		if layout.right_expression_callback() is not None:
+			self._right_expression = layout.right_expression_callback()
 
 	def uninstall(self, layout: Layout):
 		for footswitch, cb_map in layout.get_callbacks().items():
 			for event_type in cb_map.keys():
 				self._notifiers[footswitch].clear_callback(event_type)
+		if layout.left_expression_callback() is not None:
+			self._left_expression = self._noop
+		if layout.right_expression_callback() is not None:
+			self._right_expression = self._noop
 
 	def midi_callback(self, byte1, byte2, byte3, *a):
 		if byte1 == CC_BYTE:
@@ -110,6 +136,13 @@ class FootSwitchEventBus:
 				self._notifiers[value_to_switch(byte3)].down_callback()
 			elif byte2 == UP_BYTE:
 				self._notifiers[value_to_switch(byte3)].up_callback()
+			elif byte2 == LEFT_EXPR_BYTE:
+				self._left_expression(byte3)
+			elif byte2 == RIGHT_EXPR_BYTE:
+				self._right_expression(byte3)
+
+	def _noop(self, val):
+		pass
 
 class Notifier:
 	LONG_PRESS_DURATION = 0.8

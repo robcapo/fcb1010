@@ -196,7 +196,12 @@ class RackMacroStomp:
 		self._footswitch = footswitch
 		self._led = RackMacroLED(footswitch, leds)
 		self._rack = None
+		self._clear_parameters()
+
+	def _clear_parameters(self):
 		self._event_actions = {}
+		self._left_expression = None
+		self._right_expression = None
 
 	def get_layout(self):
 		def execute_all(actions, *a):
@@ -213,7 +218,7 @@ class RackMacroStomp:
 		self.update_parameters()
 
 	def update_parameters(self):
-		self._event_actions = {}
+		self._clear_parameters()
 		for param in self._rack.parameters:
 			self._parse_event_actions(param)
 
@@ -245,6 +250,10 @@ class RackMacroStomp:
 
 				action = Toggle(param, float(min_max[0]), float(min_max[1]))
 				self._led.watch_parameter(param, (float(min_max[0]) + float(min_max[1])) / 2)
+			elif action_spec == "el":
+				self._left_expression_callback = self._parameter_expression_callback(param)
+			elif action_spec == "er":
+				self._right_expression_callback = self._parameter_expression_callback(param)
 			elif action_spec.startswith("s"):
 				if not action_spec[1:].isnumeric():
 					continue
@@ -256,6 +265,10 @@ class RackMacroStomp:
 				self._event_actions[event] = []
 			self._event_actions[event].append(action)
 
+	def _parameter_expression_callback(self, param):
+		def cb(val):
+			param.value = val
+		return cb
 
 class Action:
 	def execute(self):
