@@ -2,6 +2,7 @@ from .led import LEDController
 from .footswitch import FootSwitch, Layout, EventType, bottom_row, top_row
 from .effects_mode import DeviceEnabledLED
 from .board import Mode
+from ableton.v2.base import liveobj_valid
 
 from functools import partial
 import logging
@@ -47,14 +48,14 @@ class RacksControllerMode(Mode):
 	This would assign Wah Amount to the left
 	expression pedal when stomp 5 is held.
 	"""
-	def __init__(self, leds: LEDController):
+	def __init__(self, leds: LEDController, scheduler):
 		super(RacksControllerMode, self).__init__(leds)
 		self._leds = leds
 		self._track = None
 		self._racks = []
 		self._rack_ind = None
 		self._stomps = [RackMacroStomp(fs, leds) for fs in bottom_row()]
-		self._patches = PatchSelector(top_row(), leds, self._set_rack)
+		self._patches = PatchSelector(top_row(), leds, scheduler, self._set_rack)
 
 	def get_layout(self):
 		l = Layout()
@@ -89,7 +90,7 @@ class RacksControllerMode(Mode):
 		if self._track is None:
 			return
 
-		for device in self._racks:
+		for device in self._track.devices:
 			if device.name_has_listener(self._update_devices):
 				device.remove_name_listener(self._update_devices)
 
@@ -119,21 +120,23 @@ class RacksControllerMode(Mode):
 		if self._rack_ind is None:
 			return
 
-		if self._racks[self._rack_ind].parameters_has_listener(self._update_parameters):
-			self._racks[self._rack_ind].remove_parameters_listener(self._update_parameters)
+		if liveobj_valid(self._racks[self._rack_ind]):
+			if self._racks[self._rack_ind].parameters_has_listener(self._update_parameters):
+				self._racks[self._rack_ind].remove_parameters_listener(self._update_parameters)
 
-		for param in self._racks[self._rack_ind].parameters:
-			if param.name_has_listener(self._update_stomps):
-				param.remove_name_listener(self._update_stomps)
+			for param in self._racks[self._rack_ind].parameters:
+				if param.name_has_listener(self._update_stomps):
+					param.remove_name_listener(self._update_stomps)
 
 		self._rack_ind = None
 
 class PatchSelector:
-	def __init__(self, footswitches, leds: LEDController, callback = None):
+	def __init__(self, footswitches, leds: LEDController, scheduler, callback = None):
 		self._footswitches = footswitches
 		self._leds = [DeviceEnabledLED(fs, leds) for fs in footswitches]
 		self._indexes = {fs: i for i, fs in enumerate(footswitches)}
 		self._ons = {}
+		self._scheduler = scheduler
 		self._callback = callback
 
 	def get_layout(self):
@@ -159,7 +162,7 @@ class PatchSelector:
 	def set_device_ind(self, device_ind):
 		if device_ind >= len(self._footswitches):
 			return
-		self._pressed(self._footswitches[device_ind])
+		self._scheduler(0, partial(self._pressed, self._footswitches[device_ind]))
 
 	def clear(self):
 		self._ons = {}
@@ -318,8 +321,9 @@ class RackMacroLED:
 		if self._parameter is None:
 			return
 
-		if self._parameter.value_has_listener(self._update):
-			self._parameter.remove_value_listener(self._update)
+		if liveobj_valid(self._parameter):
+			if self._parameter.value_has_listener(self._update):
+				self._parameter.remove_value_listener(self._update)
 
 		self._parameter = None
 		self._off()

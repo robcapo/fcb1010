@@ -38,7 +38,7 @@ class FcbSurface(ControlSurface):
 			event_bus = FootSwitchEventBus()
 			
 			self._board = Board(leds, event_bus)
-			self._board.add_mode(RacksControllerMode(leds.copy([f.led_value() for f in numbered_footswitches()])))
+			self._board.add_mode(RacksControllerMode(leds.copy([f.led_value() for f in numbered_footswitches()]), self.schedule_message))
 			# self._board.add_mode(EffectsMode(leds.copy([f.led_value() for f in numbered_footswitches()])))
 			# self._board.add_mode(LoopMode(leds.copy([f.led_value() for f in numbered_footswitches()])))
 			self._board.add_mode(SessionMode(leds.copy([f.led_value() for f in numbered_footswitches()]), self.schedule_message))
@@ -48,8 +48,10 @@ class FcbSurface(ControlSurface):
 
 
 	def build_midi_map(self, midi_map_handle):
-		Live.MidiMap.forward_midi_cc(self.__c_instance.handle(), midi_map_handle, 0, 104) # button down
-		Live.MidiMap.forward_midi_cc(self.__c_instance.handle(), midi_map_handle, 0, 105) # button up
+		Live.MidiMap.forward_midi_cc(self.__c_instance.handle(), midi_map_handle, 0, FOOTSWITCH_DOWN_ID) # button down
+		Live.MidiMap.forward_midi_cc(self.__c_instance.handle(), midi_map_handle, 0, FOOTSWITCH_UP_ID) # button up
+		Live.MidiMap.forward_midi_cc(self.__c_instance.handle(), midi_map_handle, 0, LEFT_EXPRESSION_ID) # button up
+		Live.MidiMap.forward_midi_cc(self.__c_instance.handle(), midi_map_handle, 0, RIGHT_EXPRESSION_ID) # button up
 		super(FcbSurface, self).build_midi_map(midi_map_handle)
 
 	def send_cc(self, identifier, value):
