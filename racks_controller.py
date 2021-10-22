@@ -54,17 +54,46 @@ class RacksControllerMode(Mode):
 		self._track = None
 		self._racks = []
 		self._rack_ind = None
-		self._stomps = [RackMacroStomp(fs, leds) for fs in bottom_row()]
+		self._stomps = [RackMacroStomp(
+			fs, 
+			leds, 
+			self._set_left_expression_callback, 
+			self._set_right_expression_callback
+		) for fs in bottom_row()]
 		self._patches = PatchSelector(top_row(), leds, scheduler, self._set_rack)
+		self._left_expression_callback = None
+		self._right_expression_callback = None
 
 	def get_layout(self):
 		l = Layout()
 		for s in self._stomps: l.union_with(s.get_layout())
 		l.union_with(self._patches.get_layout())
+		l.set_left_expression_callback(self._left_expression_callback_wrapper)
+		l.set_right_expression_callback(self._right_expression_callback_wrapper)
 		return l
 
 	def set_layout_changed_callback(self, cb):
 		self._layout_changed_callback = cb
+
+	def _left_expression_callback_wrapper(self, val):
+		if self._rack_ind is None:
+			return
+		if self._left_expression_callback is None:
+			return
+		self._left_expression_callback(val)
+
+	def _right_expression_callback_wrapper(self, val):
+		if self._rack_ind is None:
+			return
+		if self._right_expression_callback is None:
+			return
+		self._right_expression_callback(val)
+
+	def _set_left_expression_callback(self, cb):
+		self._left_expression_callback = cb
+
+	def _set_right_expression_callback(self, cb):
+		self._right_expression_callback = cb
 
 	def set_track(self, track):
 		self._clear_devices()
@@ -195,16 +224,16 @@ class RackMacroStomp:
 		"h": EventType.LONG_PRESS
 	}
 
-	def __init__(self, footswitch, leds: LEDController):
+	def __init__(self, footswitch, leds: LEDController, set_left_expression_callback, set_right_expression_callback):
 		self._footswitch = footswitch
 		self._led = RackMacroLED(footswitch, leds)
 		self._rack = None
+		self._set_left_expression_callback = set_left_expression_callback
+		self._set_right_expression_callback = set_right_expression_callback
 		self._clear_parameters()
 
 	def _clear_parameters(self):
 		self._event_actions = {}
-		self._left_expression = None
-		self._right_expression = None
 
 	def get_layout(self):
 		def execute_all(actions, *a):
@@ -254,9 +283,9 @@ class RackMacroStomp:
 				action = Toggle(param, float(min_max[0]), float(min_max[1]))
 				self._led.watch_parameter(param, (float(min_max[0]) + float(min_max[1])) / 2)
 			elif action_spec == "el":
-				self._left_expression_callback = self._parameter_expression_callback(param)
+				action = SetExpressionCallback(param, self._set_left_expression_callback)
 			elif action_spec == "er":
-				self._right_expression_callback = self._parameter_expression_callback(param)
+				action = SetExpressionCallback(param, self._set_right_expression_callback)
 			elif action_spec.startswith("s"):
 				if not action_spec[1:].isnumeric():
 					continue
@@ -296,6 +325,17 @@ class Toggle(Action):
 			self._param.value = self._max
 		else:
 			self._param.value = self._min
+
+class SetExpressionCallback(Action):
+	def __init__(self, param, set_expression_callback):
+		self._param = param
+		self._set_expression_callback = set_expression_callback
+
+	def execute(self):
+		self._set_expression_callback(self._cb)
+
+	def _cb(self, value):
+		self._param.value = value
 
 
 class RackMacroLED:
