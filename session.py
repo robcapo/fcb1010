@@ -1,5 +1,4 @@
-from .footswitch import FootSwitchEventBus
-from .led import LEDController
+from ableton.v2.base import liveobj_valid
 import Live
 import logging
 
@@ -25,21 +24,29 @@ class Session:
 	def add_callback(self, cb):
 		self._tracks_updated_callback = cb
 
-	def _update_tracks(self):
-		if len(self._song.tracks) > len(self._tracks):
-			for track in self._song.tracks:
-				if track._live_ptr not in self._tracks:
-					logger.info("Adding new track {} with name {}".format(track._live_ptr, track.name))
-					self._tracks[track._live_ptr] = track
-					track.add_name_listener(self._update_tracks)
-		elif len(self._song.tracks) < len(self._tracks):
-			tracks = {t._live_ptr: t for t in self._song.tracks}
-			for track_ptr in list(self._tracks.keys()):
-				if track_ptr not in tracks:
-					logger.info("Removing track {}".format(track_ptr))
-					del self._tracks[track_ptr]
+	def disconnect(self):
+		self._tracks_updated_callback = None
+		if self._song.tracks_has_listener(self._update_tracks):
+			self._song.remove_tracks_listener(self._update_tracks)
+		for track in self._tracks.values():
+			if liveobj_valid(track) and track.name_has_listener(self._update_tracks):
+				track.remove_name_listener(self._update_tracks)
+		self._tracks = {}
 
-		tracked_tracks = [t for t in self._tracks.values() if "#fcb" in t.name]
+	def _update_tracks(self):
+		tracks = {t._live_ptr: t for t in self._song.tracks}
+		for track_ptr in list(self._tracks.keys()):
+			if track_ptr not in tracks:
+				logger.info("Removing track {}".format(track_ptr))
+				del self._tracks[track_ptr]
+		for track_ptr, track in tracks.items():
+			if track_ptr not in self._tracks:
+				logger.info("Adding new track {} with name {}".format(track_ptr, track.name))
+				self._tracks[track_ptr] = track
+				track.add_name_listener(self._update_tracks)
+
+		# Use the order of the tracks in the set
+		tracked_tracks = [t for t in self._song.tracks if "#fcb" in t.name]
 		if tracked_tracks != self._tracked_tracks:
 			self._tracked_tracks = tracked_tracks
 			if self._tracks_updated_callback is not None:

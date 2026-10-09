@@ -43,8 +43,16 @@ class FcbSurface(ControlSurface):
 			# self._board.add_mode(LoopMode(leds.copy([f.led_value() for f in numbered_footswitches()])))
 			self._board.add_mode(SessionMode(leds.copy([f.led_value() for f in numbered_footswitches()]), self.schedule_message))
 
-			self.add_received_midi_listener(event_bus.midi_callback)
+			self._midi_callback = event_bus.midi_callback
+			self.add_received_midi_listener(self._midi_callback)
 			logger.info("Added midi received listener")
+
+	def disconnect(self):
+		logger.info("Disconnecting FcbSurface")
+		if hasattr(self, "remove_received_midi_listener"):
+			self.remove_received_midi_listener(self._midi_callback)
+		self._board.disconnect()
+		super(FcbSurface, self).disconnect()
 
 	def build_midi_map(self, midi_map_handle):
 		Live.MidiMap.forward_midi_cc(self.__c_instance.handle(), midi_map_handle, 0, FOOTSWITCH_DOWN_ID) # button down
