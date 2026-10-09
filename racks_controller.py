@@ -53,6 +53,8 @@ class RacksControllerMode(Mode):
 	This would assign Wah Amount to the left
 	expression pedal when stomp 5 is held.
 	"""
+	display_text = "FX"
+
 	def __init__(self, leds: LEDController, scheduler):
 		super(RacksControllerMode, self).__init__(leds)
 		self._leds = leds

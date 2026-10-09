@@ -1,4 +1,5 @@
 from .led import LEDController
+from .display import Display
 from .footswitch import FootSwitchEventBus, Layout, FootSwitch, EventType
 from .session import Session
 from functools import partial
@@ -8,6 +9,9 @@ import Live
 logger = logging.getLogger(__name__)
 
 class Mode:
+	# Shown on the seven segment display while the mode is active
+	display_text = ""
+
 	def __init__(self, leds: LEDController):
 		self.leds = leds
 
@@ -32,8 +36,10 @@ class Mode:
 		pass
 
 class Board:
-	def __init__(self, leds: LEDController, footswitch_events: FootSwitchEventBus):
+	def __init__(self, leds: LEDController, display: Display, footswitch_events: FootSwitchEventBus):
 		self._leds = leds
+		self._display = display
+		self._display.clear()
 		self._modes = []
 		self._current_mode = None
 		self._current_mode_layout = None
@@ -98,10 +104,12 @@ class Board:
 		self._modes[ind].activate()
 		self._install_mode_layout(ind)
 		self._current_mode = ind
+		self._display.show(self._modes[ind].display_text)
 		if self._current_mode < len(self._mode_led_values):
 			self._leds.on(self._mode_led_values[self._current_mode])
 
 	def disconnect(self):
+		self._display.clear()
 		self._session.disconnect()
 		for mode in self._modes:
 			mode.disconnect()

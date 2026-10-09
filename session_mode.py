@@ -28,6 +28,8 @@ class SessionMode(Mode):
 	[5]: Tap Tempo | hold to toggle metronome
 	[6-10]: Unused
 	"""
+	display_text = "LP"
+
 	def __init__(self, leds: LEDController, scheduler):
 		super(SessionMode, self).__init__(leds)
 		self._leds = leds

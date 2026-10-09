@@ -6,6 +6,7 @@ from .loop_mode import LoopMode
 from .session_mode import SessionMode
 from .racks_controller import RacksControllerMode
 from .board import Board
+from .display import Display
 import logging
 import Live
 import sys
@@ -37,7 +38,7 @@ class FcbSurface(ControlSurface):
 			leds = LEDController(self.send_cc, self.schedule_message)
 			event_bus = FootSwitchEventBus(self.schedule_message)
 			
-			self._board = Board(leds, event_bus)
+			self._board = Board(leds, Display(self.send_cc), event_bus)
 			self._board.add_mode(RacksControllerMode(leds.copy([f.led_value() for f in numbered_footswitches()]), self.schedule_message))
 			# self._board.add_mode(EffectsMode(leds.copy([f.led_value() for f in numbered_footswitches()])))
 			# self._board.add_mode(LoopMode(leds.copy([f.led_value() for f in numbered_footswitches()])))
