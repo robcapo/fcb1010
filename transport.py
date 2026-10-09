@@ -35,7 +35,9 @@ class Metronome:
 				self._times = []
 		self._times.append(t)
 		if len(self._times) > 2:
-			self._song.tempo = 120 / (self._times[len(self._times) - 1] - self._times[len(self._times) - 3])
+			tempo = 120 / (self._times[len(self._times) - 1] - self._times[len(self._times) - 3])
+			# Live only accepts tempos in this range
+			self._song.tempo = min(max(tempo, 20.0), 999.0)
 
 
 	def held(self, *a):
@@ -43,6 +45,10 @@ class Metronome:
 		if self._song.metronome and not self._song.is_playing:
 			self._song.continue_playing()
 		
+	def disconnect(self):
+		if self._song.metronome_has_listener(self._update):
+			self._song.remove_metronome_listener(self._update)
+
 	def _update(self):
 		if self._song.metronome:
 			self._leds.on(self._footswitch.led_value())
