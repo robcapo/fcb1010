@@ -75,6 +75,9 @@ class TracksController:
 		]
 		# (track, callback) for each input routing listener we've added
 		self._routing_listeners = []
+		# The main track and the name listener that re-applies routing when it's renamed
+		self._main_track = None
+		self._main_track_name_listener = None
 
 	def get_layout(self):
 		l = Layout()
@@ -104,7 +107,7 @@ class TracksController:
 					channel_track.color = main_track.color
 					channel_track.current_monitoring_state = 2 # Monitoring Off
 					channel_track.arm = True
-					update_routing = self._set_routing_callback(channel_track, main_track.name)
+					update_routing = self._set_routing_callback(channel_track, main_track)
 					channel_track.add_available_input_routing_types_listener(update_routing)
 					self._routing_listeners.append((channel_track, update_routing))
 					update_routing()
@@ -116,11 +119,18 @@ class TracksController:
 			if liveobj_valid(track) and track.available_input_routing_types_has_listener(cb):
 				track.remove_available_input_routing_types_listener(cb)
 		self._routing_listeners = []
+		if self._main_track is not None and liveobj_valid(self._main_track):
+			if self._main_track.name_has_listener(self._main_track_name_listener):
+				self._main_track.remove_name_listener(self._main_track_name_listener)
+		self._main_track = None
+		self._main_track_name_listener = None
 
-	def _set_routing_callback(self, track: Live.Track.Track, routing):
+	def _set_routing_callback(self, track: Live.Track.Track, main_track: Live.Track.Track):
 		def update_routing():
-			if not liveobj_valid(track):
+			if not liveobj_valid(track) or not liveobj_valid(main_track):
 				return
+			# Look up the name each time, since the main track can be renamed
+			routing = main_track.name
 			current = track.input_routing_type
 			if current is not None and current.display_name == routing:
 				return
