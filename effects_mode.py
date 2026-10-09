@@ -35,11 +35,15 @@ class EffectsMode(Mode):
 		return l
 
 	def set_track(self, track: Live.Track.Track):
-		if track != self._track:
-			self.clear()
+		self.clear()
 		self._track = track
+		if self._track is None:
+			return
 		self._track.add_devices_listener(self._update_devices)
 		self._update_devices()
+
+	def disconnect(self):
+		self.clear()
 
 	def _update_devices(self):
 		self._clear_devices()
@@ -63,21 +67,17 @@ class EffectsMode(Mode):
 			return
 		if track is not None and track != self._track:
 			return
-		try:
-			if self._track.devices_has_listener(self._update_devices):
-				self._track.remove_devices_listener(self._update_devices)
-		except:
-			logger.warning("Failed to remove devices listener. Track must be deleted")
-		
+		if liveobj_valid(self._track) and self._track.devices_has_listener(self._update_devices):
+			self._track.remove_devices_listener(self._update_devices)
+
 		self._clear_devices()
 		self._track = None
 
 	def _clear_devices(self):
-		if self._track is None:
-			return
-		for device in self._track.devices:
-			if device.name_has_listener(self._update_devices):
-				device.remove_name_listener(self._update_devices)
+		if self._track is not None and liveobj_valid(self._track):
+			for device in self._track.devices:
+				if device.name_has_listener(self._update_devices):
+					device.remove_name_listener(self._update_devices)
 		for stomp in self._stomps: stomp.clear()
 		self._patch.clear()
 
@@ -129,8 +129,8 @@ class OneHotRack:
 			logger.warning("Cannot control non-rack device: {}".format(rack.name))
 			return
 
-		if not rack.can_have_chains:
-			logger.warning("Cannot control rack {} because it can't have chains".format(rack.name))
+		if not rack.can_have_chains or len(rack.chains) == 0:
+			logger.warning("Cannot control rack {} because it has no chains".format(rack.name))
 			return
 
 		devices = rack.chains[0].devices
@@ -168,15 +168,14 @@ class DeviceEnabledLED:
 		self._device = None
 
 	def listen_to_device(self, device):
-		if self._device != device:
-			self.clear()
+		self.clear()
 		self._device = device
 		self._device.add_is_active_listener(self._update_state)
 		self._update_state()
 
 	def clear(self):
 		if self._device is not None:
-			if liveobj_valid(self._device):
+			if liveobj_valid(self._device) and self._device.is_active_has_listener(self._update_state):
 				self._device.remove_is_active_listener(self._update_state)
 			self._device = None
 		self._update_state()

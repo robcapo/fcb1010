@@ -1,10 +1,6 @@
 from enum import IntEnum, Enum
-from threading import Timer
 from typing import Callable
 import logging
-import time
-import threading
-import queue
 import traceback
 
 CC_BYTE = 176
@@ -100,15 +96,24 @@ class Layout:
 		return self._callbacks
 
 	def union_with(self, other):
-		self._callbacks.update(other._callbacks)
+		for footswitch, cb_map in other._callbacks.items():
+			self._callbacks.setdefault(footswitch, {}).update(cb_map)
+		if other._left_expression_callback is not None:
+			self._left_expression_callback = other._left_expression_callback
+		if other._right_expression_callback is not None:
+			self._right_expression_callback = other._right_expression_callback
 
 class FootSwitchEventBus:
 	"""
-	Handles all the events of the 10 numbered foot switches + UP + DOWN.
-	Does not handle expression pedal events.
+	Handles all the events of the 10 numbered foot switches + UP + DOWN,
+	plus the two expression pedals.
+
+	Everything runs on Live's main thread: MIDI arrives via midi_callback,
+	and the timing for long / double presses is done with Live's scheduler.
+	Live's API isn't thread safe, so callbacks must never run on another thread.
 	"""
-	def __init__(self):
-		self._notifiers = {switch: Notifier() for switch in FootSwitch}
+	def __init__(self, scheduler):
+		self._notifiers = {switch: Notifier(scheduler) for switch in FootSwitch}
 		self._left_expression = self._noop
 		self._right_expression = self._noop
 
@@ -133,85 +138,103 @@ class FootSwitchEventBus:
 	def midi_callback(self, byte1, byte2, byte3, *a):
 		if byte1 == CC_BYTE:
 			if byte2 == DOWN_BYTE:
-				self._notifiers[value_to_switch(byte3)].down_callback()
+				switch = value_to_switch(byte3)
+				if switch is not None:
+					self._notifiers[switch].down()
 			elif byte2 == UP_BYTE:
-				self._notifiers[value_to_switch(byte3)].up_callback()
+				switch = value_to_switch(byte3)
+				if switch is not None:
+					self._notifiers[switch].up()
 			elif byte2 == LEFT_EXPR_BYTE:
-				self._left_expression(byte3)
+				_call_safely(self._left_expression, byte3)
 			elif byte2 == RIGHT_EXPR_BYTE:
-				self._right_expression(byte3)
+				_call_safely(self._right_expression, byte3)
 
 	def _noop(self, val):
 		pass
 
 class Notifier:
-	LONG_PRESS_DURATION = 0.8
-	DOUBLE_PRESS_DURATION = 0.5
+	"""
+	Turns the physical DOWN / UP events of one foot switch into
+	PRESS / LONG_PRESS / DOUBLE_PRESS events.
 
-	def __init__(self):
+	PRESS fires as soon as the switch comes up, unless a DOUBLE_PRESS
+	callback is installed, in which case it waits to see if a second
+	press is coming.
+	"""
+	# Durations are in scheduler ticks (Live ticks every ~100ms)
+	LONG_PRESS_TICKS = 8
+	DOUBLE_PRESS_TICKS = 5
+
+	_IDLE = 0
+	_DOWN = 1 			# down, waiting to see if it's a long press
+	_HELD = 2 			# long press already fired, waiting for up
+	_WAIT_SECOND = 3 	# up after a short press, waiting for a possible second press
+	_SECOND_DOWN = 4 	# second press of a double press is down
+
+	def __init__(self, scheduler):
+		self._scheduler = scheduler
 		self._callbacks = {}
-		self._down_event = threading.Event()
-		self._up_event = threading.Event()
-		self._killed = threading.Event()
-		threading.Thread(target=self.run, daemon=True).start()
-
-	def __del__(self):
-		self._killed.set()
+		self._state = self._IDLE
+		# Incremented to invalidate any pending scheduled timeout
+		self._generation = 0
 
 	def set_callback(self, event_type: EventType, callback: Callable[[EventType], None]) -> None:
 		self._callbacks[event_type] = callback
 
 	def clear_callback(self, event_type: EventType):
-		del self._callbacks[event_type]
+		self._callbacks.pop(event_type, None)
 
-	def run(self) -> None:
-		logger.info("Running event loop")
-		while not self._killed.is_set():
-			self._await_down()
-			up = self._await_up(self.LONG_PRESS_DURATION)
-			if not up:
-				self._notify(EventType.LONG_PRESS)
-				self._await_up()
-				continue
+	def down(self) -> None:
+		self._notify(EventType.DOWN)
+		if self._state == self._WAIT_SECOND:
+			self._generation += 1
+			self._state = self._SECOND_DOWN
+		else:
+			self._state = self._DOWN
+			self._schedule(self.LONG_PRESS_TICKS, self._long_press_timeout)
 
-			press_event = EventType.PRESS
-
+	def up(self) -> None:
+		self._notify(EventType.UP)
+		state = self._state
+		self._generation += 1
+		self._state = self._IDLE
+		if state == self._DOWN:
 			if EventType.DOUBLE_PRESS in self._callbacks:
-				if self._await_down(self.DOUBLE_PRESS_DURATION):
-					press_event = EventType.DOUBLE_PRESS
-					self._await_up()
+				self._state = self._WAIT_SECOND
+				self._schedule(self.DOUBLE_PRESS_TICKS, self._double_press_timeout)
+			else:
+				self._notify(EventType.PRESS)
+		elif state == self._SECOND_DOWN:
+			self._notify(EventType.DOUBLE_PRESS)
 
-			self._notify(press_event)
+	def _long_press_timeout(self):
+		if self._state == self._DOWN:
+			self._state = self._HELD
+			self._notify(EventType.LONG_PRESS)
 
-		logger.info("Event loop killed")
+	def _double_press_timeout(self):
+		if self._state == self._WAIT_SECOND:
+			self._state = self._IDLE
+			self._notify(EventType.PRESS)
 
-
-	def down_callback(self) -> None:
-		self._down_event.set()
-
-	def up_callback(self) -> None:
-		self._up_event.set()
-			
-	def _await_down(self, timeout=None):
-		down = self._down_event.wait(timeout)
-		if down:
-			self._notify(EventType.DOWN)
-			self._down_event.clear()
-		return down
-
-	def _await_up(self, timeout=None):
-		up = self._up_event.wait(timeout)
-		if up:
-			self._notify(EventType.UP)
-			self._up_event.clear()
-		return up
+	def _schedule(self, ticks, cb):
+		self._generation += 1
+		generation = self._generation
+		def run():
+			if generation == self._generation:
+				cb()
+		self._scheduler(ticks, run)
 
 	def _notify(self, event_type):
 		if event_type in self._callbacks:
-			try:
-				self._callbacks[event_type](event_type)
-			except Exception:
-				logger.error('Caught exception while notifying {}: {}'.format(event_type, traceback.format_exc()))
+			_call_safely(self._callbacks[event_type], event_type)
+
+def _call_safely(cb, *a):
+	try:
+		cb(*a)
+	except Exception:
+		logger.error('Caught exception in footswitch callback: {}'.format(traceback.format_exc()))
 
 def bottom_row():
 	return [
@@ -234,7 +257,8 @@ def top_row():
 def numbered_footswitches():
 	return bottom_row() + top_row()
 
-def value_to_switch(value: int) -> FootSwitch:
+def value_to_switch(value: int):
+	"""Returns the FootSwitch for a CC value, or None if it's not a known switch"""
 	return {
 		1: FootSwitch.ONE,
 		2: FootSwitch.TWO,
@@ -248,4 +272,4 @@ def value_to_switch(value: int) -> FootSwitch:
 		0: FootSwitch.TEN,
 		10: FootSwitch.UP,
 		11: FootSwitch.DOWN,
-	}[value]
+	}.get(value)

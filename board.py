@@ -1,4 +1,5 @@
 from .led import LEDController
+from .display import Display
 from .footswitch import FootSwitchEventBus, Layout, FootSwitch, EventType
 from .session import Session
 from functools import partial
@@ -8,6 +9,9 @@ import Live
 logger = logging.getLogger(__name__)
 
 class Mode:
+	# Shown on the seven segment display while the mode is active
+	display_text = ""
+
 	def __init__(self, leds: LEDController):
 		self.leds = leds
 
@@ -24,11 +28,18 @@ class Mode:
 		raise NotImplementedError()
 
 	def set_track(self, track: Live.Track.Track):
+		"""Called with the track to control, or None if there isn't one"""
 		raise NotImplementedError()
 
+	def disconnect(self):
+		"""Remove any listeners. Called when the control surface is disconnected"""
+		pass
+
 class Board:
-	def __init__(self, leds: LEDController, footswitch_events: FootSwitchEventBus):
+	def __init__(self, leds: LEDController, display: Display, footswitch_events: FootSwitchEventBus):
 		self._leds = leds
+		self._display = display
+		self._display.clear()
 		self._modes = []
 		self._current_mode = None
 		self._current_mode_layout = None
@@ -87,14 +98,21 @@ class Board:
 			return
 		if self._current_mode is not None:
 			self._modes[self._current_mode].deactivate()
-			self._footswitch_events.uninstall(self._modes[self._current_mode].get_layout())
+			self._footswitch_events.uninstall(self._current_mode_layout)
 			if self._current_mode < len(self._mode_led_values):
 				self._leds.off(self._mode_led_values[self._current_mode])
 		self._modes[ind].activate()
 		self._install_mode_layout(ind)
 		self._current_mode = ind
+		self._display.show(self._modes[ind].display_text)
 		if self._current_mode < len(self._mode_led_values):
 			self._leds.on(self._mode_led_values[self._current_mode])
+
+	def disconnect(self):
+		self._display.clear()
+		self._session.disconnect()
+		for mode in self._modes:
+			mode.disconnect()
 
 	def _set_track(self, track):
 		if track == self._current_track:
@@ -104,10 +122,9 @@ class Board:
 			mode.set_track(track)
 
 	def _tracks_updated(self):
-		for track in self._session.get_tracks():
-			self._set_track(track)
-			# just use the first track for now
-			break
+		tracks = self._session.get_tracks()
+		# just use the first track for now. If there are no tracks, clear the modes
+		self._set_track(tracks[0] if len(tracks) > 0 else None)
 
 	def _refresh_layout(self, ind):
 		if self._current_mode == ind:

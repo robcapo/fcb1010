@@ -10,6 +10,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+LEFT = "left"
+RIGHT = "right"
 
 class RacksControllerMode(Mode):
 	"""
@@ -42,118 +44,152 @@ class RacksControllerMode(Mode):
 	el: assign to left expression pedal
 	er: assign to right expression pedal
 
+	Expression pedals sweep the macro across its full range. The
+	assignment is cleared when switching patches.
+
 	So of a macro name might be:
 	Wah Amount #s5hel
 
 	This would assign Wah Amount to the left
 	expression pedal when stomp 5 is held.
 	"""
+	display_text = "FX"
+
 	def __init__(self, leds: LEDController, scheduler):
 		super(RacksControllerMode, self).__init__(leds)
 		self._leds = leds
 		self._track = None
 		self._racks = []
 		self._rack_ind = None
-		self._stomps = [RackMacroStomp(
-			fs, 
-			leds, 
-			self._set_left_expression_callback, 
-			self._set_right_expression_callback
-		) for fs in bottom_row()]
+		self._stomps = [RackMacroStomp(fs, leds, self._set_expression_param) for fs in bottom_row()]
 		self._patches = PatchSelector(top_row(), leds, scheduler, self._set_rack)
-		self._left_expression_callback = None
-		self._right_expression_callback = None
+		# The macro currently assigned to each expression pedal
+		self._expression_params = {LEFT: None, RIGHT: None}
+		self._layout_changed_callback = lambda: None
 
 	def get_layout(self):
 		l = Layout()
 		for s in self._stomps: l.union_with(s.get_layout())
 		l.union_with(self._patches.get_layout())
-		l.set_left_expression_callback(self._left_expression_callback_wrapper)
-		l.set_right_expression_callback(self._right_expression_callback_wrapper)
+		l.set_left_expression_callback(partial(self._expression_moved, LEFT))
+		l.set_right_expression_callback(partial(self._expression_moved, RIGHT))
 		return l
 
 	def set_layout_changed_callback(self, cb):
 		self._layout_changed_callback = cb
 
-	def _left_expression_callback_wrapper(self, val):
+	def _expression_moved(self, side, val):
 		if self._rack_ind is None:
 			return
-		if self._left_expression_callback is None:
+		param = self._expression_params[side]
+		if param is None or not liveobj_valid(param):
 			return
-		self._left_expression_callback(val)
+		value = param.min + (param.max - param.min) * val / 127.0
+		if param.is_quantized:
+			value = round(value)
+		param.value = value
 
-	def _right_expression_callback_wrapper(self, val):
-		if self._rack_ind is None:
-			return
-		if self._right_expression_callback is None:
-			return
-		self._right_expression_callback(val)
+	def _set_expression_param(self, side, param):
+		self._expression_params[side] = param
 
-	def _set_left_expression_callback(self, cb):
-		self._left_expression_callback = cb
-
-	def _set_right_expression_callback(self, cb):
-		self._right_expression_callback = cb
+	def _prune_expression_params(self):
+		"""Unassign expression pedals from macros that are no longer mapped to them"""
+		for side, param in self._expression_params.items():
+			if param is None:
+				continue
+			if not any(param in s.expression_params(side) for s in self._stomps):
+				self._expression_params[side] = None
 
 	def set_track(self, track):
 		self._clear_devices()
+		if self._track is not None and liveobj_valid(self._track):
+			if self._track.devices_has_listener(self._update_devices):
+				self._track.remove_devices_listener(self._update_devices)
 		self._track = track
+		if self._track is None:
+			self._patches.set_devices([])
+			self._layout_changed_callback()
+			return
 		self._track.add_devices_listener(self._update_devices)
 		self._update_devices()
 
+	def disconnect(self):
+		self.set_track(None)
+
 	def _update_devices(self):
-		if self._track is None:
+		if self._track is None or not liveobj_valid(self._track):
 			return
 
+		# Try to stay on the same patch if it's still there
+		selected = None
+		if self._rack_ind is not None and liveobj_valid(self._racks[self._rack_ind]):
+			selected = self._racks[self._rack_ind]._live_ptr
+
 		self._clear_devices()
-		
+
 		for device in self._track.devices:
 			device.add_name_listener(self._update_devices)
 			if "#rack" in device.name:
 				self._racks.append(device)
 
+		rack_ind = 0
+		for i, rack in enumerate(self._racks):
+			if rack._live_ptr == selected:
+				rack_ind = i
+
 		self._patches.set_devices(self._racks)
-		self._patches.set_device_ind(0)
+		self._layout_changed_callback()
+		self._patches.set_device_ind(rack_ind)
 
 	def _clear_devices(self):
-		if self._track is None:
+		self._clear_rack()
+		self._racks = []
+
+		if self._track is None or not liveobj_valid(self._track):
 			return
 
 		for device in self._track.devices:
 			if device.name_has_listener(self._update_devices):
 				device.remove_name_listener(self._update_devices)
 
-		self._clear_rack()
-		self._racks = []
-
-
 	def _set_rack(self, rack_ind):
 		self._clear_rack()
+		if rack_ind >= len(self._racks) or not liveobj_valid(self._racks[rack_ind]):
+			self._layout_changed_callback()
+			return
 		self._rack_ind = rack_ind
 		self._racks[rack_ind].add_parameters_listener(self._update_parameters)
 		self._update_parameters()
 
 	def _update_parameters(self):
+		rack = self._racks[self._rack_ind]
 		for stomp in self._stomps:
-			stomp.set_rack(self._racks[self._rack_ind])
-		for param in self._racks[self._rack_ind].parameters:
-			param.add_name_listener(self._update_stomps)
+			stomp.set_rack(rack)
+		for param in rack.parameters:
+			if not param.name_has_listener(self._update_stomps):
+				param.add_name_listener(self._update_stomps)
+		self._prune_expression_params()
 		self._layout_changed_callback()
 
 	def _update_stomps(self):
 		for s in self._stomps: s.update_parameters()
+		self._prune_expression_params()
 		self._layout_changed_callback()
 
 	def _clear_rack(self):
-		logger.info("Rack ind {} racks {}".format(self._rack_ind, self._racks))
+		for stomp in self._stomps:
+			stomp.clear()
+		self._expression_params = {LEFT: None, RIGHT: None}
+
 		if self._rack_ind is None:
 			return
 
-		if liveobj_valid(self._racks[self._rack_ind]):
-			if self._racks[self._rack_ind].parameters_has_listener(self._update_parameters):
-				self._racks[self._rack_ind].remove_parameters_listener(self._update_parameters)
+		rack = self._racks[self._rack_ind]
+		if liveobj_valid(rack):
+			if rack.parameters_has_listener(self._update_parameters):
+				rack.remove_parameters_listener(self._update_parameters)
 
-			for param in self._racks[self._rack_ind].parameters:
+			for param in rack.parameters:
 				if param.name_has_listener(self._update_stomps):
 					param.remove_name_listener(self._update_stomps)
 
@@ -224,15 +260,11 @@ class RackMacroStomp:
 		"h": EventType.LONG_PRESS
 	}
 
-	def __init__(self, footswitch, leds: LEDController, set_left_expression_callback, set_right_expression_callback):
+	def __init__(self, footswitch, leds: LEDController, set_expression_param):
 		self._footswitch = footswitch
 		self._led = RackMacroLED(footswitch, leds)
 		self._rack = None
-		self._set_left_expression_callback = set_left_expression_callback
-		self._set_right_expression_callback = set_right_expression_callback
-		self._clear_parameters()
-
-	def _clear_parameters(self):
+		self._set_expression_param = set_expression_param
 		self._event_actions = {}
 
 	def get_layout(self):
@@ -249,10 +281,26 @@ class RackMacroStomp:
 		self._rack = rack
 		self.update_parameters()
 
+	def clear(self):
+		self._rack = None
+		self.update_parameters()
+
 	def update_parameters(self):
-		self._clear_parameters()
+		self._event_actions = {}
+		self._led.clear_parameter()
+		if self._rack is None or not liveobj_valid(self._rack):
+			return
 		for param in self._rack.parameters:
 			self._parse_event_actions(param)
+
+	def expression_params(self, side):
+		"""The parameters this stomp can assign to the given expression pedal"""
+		return [
+			action.param
+			for actions in self._event_actions.values()
+			for action in actions
+			if isinstance(action, SetExpressionParam) and action.side == side
+		]
 
 	def _parse_event_actions(self, param):
 		for tok in param.name.split():
@@ -283,9 +331,9 @@ class RackMacroStomp:
 				action = Toggle(param, float(min_max[0]), float(min_max[1]))
 				self._led.watch_parameter(param, (float(min_max[0]) + float(min_max[1])) / 2)
 			elif action_spec == "el":
-				action = SetExpressionCallback(param, self._set_left_expression_callback)
+				action = SetExpressionParam(param, LEFT, self._set_expression_param)
 			elif action_spec == "er":
-				action = SetExpressionCallback(param, self._set_right_expression_callback)
+				action = SetExpressionParam(param, RIGHT, self._set_expression_param)
 			elif action_spec.startswith("s"):
 				if not action_spec[1:].isnumeric():
 					continue
@@ -296,11 +344,6 @@ class RackMacroStomp:
 			if event not in self._event_actions:
 				self._event_actions[event] = []
 			self._event_actions[event].append(action)
-
-	def _parameter_expression_callback(self, param):
-		def cb(val):
-			param.value = val
-		return cb
 
 class Action:
 	def execute(self):
@@ -326,16 +369,15 @@ class Toggle(Action):
 		else:
 			self._param.value = self._min
 
-class SetExpressionCallback(Action):
-	def __init__(self, param, set_expression_callback):
-		self._param = param
-		self._set_expression_callback = set_expression_callback
+class SetExpressionParam(Action):
+	"""Assigns param to the left or right expression pedal"""
+	def __init__(self, param, side, set_expression_param):
+		self.param = param
+		self.side = side
+		self._set_expression_param = set_expression_param
 
 	def execute(self):
-		self._set_expression_callback(self._cb)
-
-	def _cb(self, value):
-		self._param.value = value
+		self._set_expression_param(self.side, self.param)
 
 
 class RackMacroLED:
@@ -366,9 +408,12 @@ class RackMacroLED:
 				self._parameter.remove_value_listener(self._update)
 
 		self._parameter = None
+		self._is_on = False
 		self._off()
 
 	def _update(self):
+		if self._parameter is None:
+			return
 		if self._parameter.value > self._threshold and not self._is_on:
 			self._on()
 			self._is_on = True

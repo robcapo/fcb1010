@@ -61,6 +61,8 @@ class LoopMode(Mode):
 		self._looper2.set_bars(value)
 
 	def _update_bars(self):
+		if self._bars_param is None:
+			return
 		for ind, fs in enumerate(top_row()):
 			if ind == self._bars_param.value:
 				self._leds.on(fs.led_value())
@@ -68,7 +70,13 @@ class LoopMode(Mode):
 				self._leds.off(fs.led_value())
 
 
+	def disconnect(self):
+		if self._song.metronome_has_listener(self._metronome_changed):
+			self._song.remove_metronome_listener(self._metronome_changed)
+
 	def set_track(self, track):
+		if track is None:
+			return
 		for rack in track.devices:
 			if not isinstance(rack, Live.RackDevice.RackDevice):
 				continue
@@ -88,12 +96,9 @@ class LoopMode(Mode):
 						self._bars_param = p
 						self._update_bars()
 
-			for device in rack.chains[1].devices:
-				self._looper2.set_device(device)
-
-	def print_looper(self):
-		for p in self._looper.parameters:
-			logger.info("Parameter: {} {}".format(p.name, p.value))
+			if len(rack.chains) > 1:
+				for device in rack.chains[1].devices:
+					self._looper2.set_device(device)
 
 class MaxLooper:
 	def __init__(self):
@@ -110,10 +115,11 @@ class MaxLooper:
 				self._bars = p
 
 	def set_bars(self, value):
-		self._bars.value = value
+		if self._bars is not None:
+			self._bars.value = value
 
 	def start(self, *a):
-		if self._device is None:
+		if self._enable is None:
 			return
 		self._enable.value = 1
 
@@ -132,24 +138,24 @@ class Looper:
 		self._song = song
 
 	def set_looper(self, looper):
-		if device.class_name != "Looper":
-			raise RuntimeError("{} is a {}, not a Looper".format(device.name, device.class_name))
+		if looper.class_name != "Looper":
+			raise RuntimeError("{} is a {}, not a Looper".format(looper.name, looper.class_name))
 		self._looper = looper
 
 	def left(self, *a):
 		if not self._song.is_playing:
 			self._song.continue_playing()
-		state = self._looper.parameters[STATE_PARAMETER_IND]
-		if state.value == STATE_RECORDING:
-			state.value = STATE_STOPPED
+		state = self._looper.parameters[self.STATE_PARAMETER_IND]
+		if state.value == self.STATE_RECORDING:
+			state.value = self.STATE_STOPPED
 		else:
-			state.value = STATE_RECORDING
+			state.value = self.STATE_RECORDING
 
 	def right(self, *a):
 		if not self._song.is_playing:
 			self._song.continue_playing()
-		state = self._looper.parameters[STATE_PARAMETER_IND]
-		if state.value == STATE_OVERDUBBING:
-			state.value = STATE_STOPPED
+		state = self._looper.parameters[self.STATE_PARAMETER_IND]
+		if state.value == self.STATE_OVERDUBBING:
+			state.value = self.STATE_STOPPED
 		else:
-			state.value = STATE_OVERDUBBING
+			state.value = self.STATE_OVERDUBBING

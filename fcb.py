@@ -6,6 +6,7 @@ from .loop_mode import LoopMode
 from .session_mode import SessionMode
 from .racks_controller import RacksControllerMode
 from .board import Board
+from .display import Display
 import logging
 import Live
 import sys
@@ -34,24 +35,31 @@ class FcbSurface(ControlSurface):
 		self.__c_instance = c_instance
 
 		with self.component_guard():
-			leds = LEDController(self.send_cc)
-			event_bus = FootSwitchEventBus()
+			leds = LEDController(self.send_cc, self.schedule_message)
+			event_bus = FootSwitchEventBus(self.schedule_message)
 			
-			self._board = Board(leds, event_bus)
+			self._board = Board(leds, Display(self.send_cc), event_bus)
 			self._board.add_mode(RacksControllerMode(leds.copy([f.led_value() for f in numbered_footswitches()]), self.schedule_message))
 			# self._board.add_mode(EffectsMode(leds.copy([f.led_value() for f in numbered_footswitches()])))
 			# self._board.add_mode(LoopMode(leds.copy([f.led_value() for f in numbered_footswitches()])))
 			self._board.add_mode(SessionMode(leds.copy([f.led_value() for f in numbered_footswitches()]), self.schedule_message))
 
-			self.add_received_midi_listener(event_bus.midi_callback)
+			self._midi_callback = event_bus.midi_callback
+			self.add_received_midi_listener(self._midi_callback)
 			logger.info("Added midi received listener")
 
+	def disconnect(self):
+		logger.info("Disconnecting FcbSurface")
+		if hasattr(self, "remove_received_midi_listener"):
+			self.remove_received_midi_listener(self._midi_callback)
+		self._board.disconnect()
+		super(FcbSurface, self).disconnect()
 
 	def build_midi_map(self, midi_map_handle):
 		Live.MidiMap.forward_midi_cc(self.__c_instance.handle(), midi_map_handle, 0, FOOTSWITCH_DOWN_ID) # button down
 		Live.MidiMap.forward_midi_cc(self.__c_instance.handle(), midi_map_handle, 0, FOOTSWITCH_UP_ID) # button up
-		Live.MidiMap.forward_midi_cc(self.__c_instance.handle(), midi_map_handle, 0, LEFT_EXPRESSION_ID) # button up
-		Live.MidiMap.forward_midi_cc(self.__c_instance.handle(), midi_map_handle, 0, RIGHT_EXPRESSION_ID) # button up
+		Live.MidiMap.forward_midi_cc(self.__c_instance.handle(), midi_map_handle, 0, LEFT_EXPRESSION_ID) # left expression
+		Live.MidiMap.forward_midi_cc(self.__c_instance.handle(), midi_map_handle, 0, RIGHT_EXPRESSION_ID) # right expression
 		super(FcbSurface, self).build_midi_map(midi_map_handle)
 
 	def send_cc(self, identifier, value):
