@@ -5,6 +5,7 @@ from .session_mode import TracksController, MONITORING_IN
 from .transport import Metronome
 from ableton.v2.base import liveobj_valid
 from functools import partial
+from time import time
 import math
 import logging
 import Live
@@ -35,7 +36,10 @@ class BoomerangMode(Mode):
 	     recording ends and the loop starts playing (and overdubbing).
 	[5]: Tap Tempo | hold to toggle metronome
 	[6]: Sync. When on, loops start and stop on the 1 of a bar and
-	     follow the song tempo. When off, loops are free running.
+	     follow the song tempo. When off, the first loop recorded sets the
+	     song's tempo, and starts the song when it's done recording. Other
+	     loops then start with it and are a multiple of its length.
+	     Erasing every loop resets this.
 	[7-10]: Auto stop after 1, 2, 4 or 8 bars: recording stops and the
 	        loop starts playing. Turning one on turns on sync. Press the
 	        lit one to turn auto stop off. Turning off sync turns them off.
@@ -55,6 +59,11 @@ class BoomerangMode(Mode):
 		self._sync = False
 		self._auto_stop = None # index into AUTO_STOP_BARS, or None
 		self._stack = False
+		# With sync off, the first loop sets the tempo and the grid. These
+		# are the loop that's recording it, and the loop's length in bars.
+		self._grid_loop = None
+		self._grid_loop_started = None
+		self._grid_bars = None
 
 		self._loops = [
 			LoopController(FootSwitch.ONE, leds, scheduler, self),
@@ -92,9 +101,6 @@ class BoomerangMode(Mode):
 		self._tracks_controller.set_main_track(None)
 		self._metronome.disconnect()
 
-	def is_synced(self):
-		return self._sync
-
 	def auto_stop_beats(self):
 		"""Length in beats that new recordings should stop at, or None to record until pressed"""
 		if not self._sync or self._auto_stop is None:
@@ -106,8 +112,58 @@ class BoomerangMode(Mode):
 
 	def start_transport(self):
 		"""The Looper only responds to the API while the song is playing"""
+		if self._sets_grid() or self._grid_loop is not None:
+			# The first loop's Looper starts the song itself, so beat 1 is the loop's start
+			return
 		if not self._song.is_playing:
 			self._song.continue_playing()
+
+	def looper_settings(self):
+		"""Quantization, Tempo Control and Song Control for the Loopers"""
+		if self._sync:
+			return ["1 bar"], ["follow song tempo"], ["none"]
+		if self._grid_bars is not None:
+			return [_bars_item(b) for b in (8, 4, 2, 1) if self._grid_bars % b == 0], ["follow song tempo"], ["none"]
+		if self._sets_grid() or self._grid_loop is not None:
+			return ["none"], ["set & follow song tempo"], ["start song"]
+		return ["none"], ["none"], ["none"]
+
+	def recording_started(self, loop):
+		if self._sets_grid():
+			self._grid_loop = loop
+			self._grid_loop_started = time()
+			if self._song.is_playing:
+				self._song.stop_playing()
+			self._apply_sync()
+
+	def recording_finished(self, loop):
+		if loop is self._grid_loop:
+			# Give the Looper a moment to set the tempo
+			self._scheduler(2, partial(self._set_grid, loop, time() - self._grid_loop_started))
+
+	def grid_pending(self):
+		"""Whether the first loop just finished, and the grid isn't set up yet"""
+		return self._grid_loop is not None and not self._grid_loop.is_recording()
+
+	def loop_erased(self):
+		if not any(l.has_loop() for l in self._loops):
+			self._grid_loop = None
+			self._grid_bars = None
+			self._apply_sync()
+
+	def _sets_grid(self):
+		"""Whether the next recording will set the tempo and grid"""
+		return (not self._sync and self._grid_bars is None and self._grid_loop is None
+			and not any(l.has_loop() for l in self._loops))
+
+	def _set_grid(self, loop, seconds):
+		if loop is not self._grid_loop:
+			return
+		bars = seconds * self._song.tempo / 60.0 / self.beats_per_bar()
+		self._grid_bars = max(1, int(round(bars)))
+		self._grid_loop = None
+		logger.info("First loop is {} bars ({} at {} bpm)".format(self._grid_bars, bars, self._song.tempo))
+		self._apply_sync()
 
 	def state_changed(self):
 		# Live doesn't allow changing a parameter from inside a notification
@@ -173,6 +229,10 @@ class BoomerangMode(Mode):
 			self._leds.off(footswitch.led_value())
 
 
+def _bars_item(bars):
+	return "1 bar" if bars == 1 else "{} bars".format(bars)
+
+
 class Looper:
 	"""
 	Wraps one of Live's Looper devices. Uses the LooperDevice functions when
@@ -215,12 +275,12 @@ class Looper:
 		else:
 			logger.error("This version of Live can't clear a Looper from a script")
 
-	def configure(self, synced):
-		self._set_item("Quantization", ["1 bar"] if synced else ["none"])
-		self._set_item("Tempo Control", ["follow song tempo"] if synced else ["none"])
+	def configure(self, quantization, tempo_control, song_control):
+		self._set_item("Quantization", quantization)
+		self._set_item("Tempo Control", tempo_control)
+		self._set_item("Song Control", song_control)
 		# The #fcb track already monitors the input, so only play the loop
 		self._set_item("Monitor", ["never"])
-		self._set_item("Song Control", ["none"])
 
 	def _transition(self, fn, state):
 		if hasattr(self.device, fn):
@@ -276,6 +336,9 @@ class LoopController:
 		l.listen(self._footswitch, EventType.LONG_PRESS, self._held)
 		return l
 
+	def has_loop(self):
+		return self.has_looper() and self._has_loop
+
 	def has_looper(self):
 		return self._looper is not None and liveobj_valid(self._looper.device)
 
@@ -303,11 +366,15 @@ class LoopController:
 
 	def apply_settings(self):
 		if self.has_looper():
-			self._looper.configure(self._mode.is_synced())
+			self._looper.configure(*self._mode.looper_settings())
 
 	def _footswitch_down(self, *a):
 		self._mode.finish_recording(self)
-		self.press()
+		if self._mode.grid_pending():
+			# Wait until the first loop has set the grid, so this one syncs to it
+			self._scheduler(3, self.press)
+		else:
+			self.press()
 
 	def press(self):
 		self._erase_on_hold = False
@@ -320,6 +387,7 @@ class LoopController:
 			# Ends the recording and starts playing the loop
 			self._cancel_auto_stop()
 			self._looper.play()
+			self._mode.recording_finished(self)
 		elif not self._has_loop:
 			self._record()
 		elif state in (Looper.PLAYING, Looper.OVERDUBBING):
@@ -330,6 +398,7 @@ class LoopController:
 			self._looper.play()
 
 	def _record(self):
+		self._mode.recording_started(self)
 		self._has_loop = True
 		beats = self._mode.auto_stop_beats()
 		if beats is not None:
@@ -356,6 +425,7 @@ class LoopController:
 		if self._song.current_song_time >= self._auto_stop_at - early:
 			self._cancel_auto_stop()
 			self._looper.play()
+			self._mode.recording_finished(self)
 
 	def _cancel_auto_stop(self):
 		self._auto_stop_at = None
@@ -375,6 +445,7 @@ class LoopController:
 		self._looper.clear()
 		self._has_loop = False
 		self._update_led()
+		self._mode.loop_erased()
 
 	def _find_looper(self):
 		looper = None
