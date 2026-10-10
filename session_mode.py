@@ -4,9 +4,17 @@ from .footswitch import FootSwitch, Layout, EventType
 from .transport import Metronome
 from ableton.v2.base import liveobj_valid
 import logging
+import re
 import Live
 
 logger = logging.getLogger(__name__)
+
+# Tracks that modes create next to the #fcb track, e.g. ch1 or lp2
+COMPANION_TRACK = re.compile(r"^(ch|lp)\d+$")
+
+# Values for Track.current_monitoring_state
+MONITORING_IN = 0
+MONITORING_OFF = 2
 
 class SessionMode(Mode):
 	"""
@@ -35,7 +43,12 @@ class SessionMode(Mode):
 		self._leds = leds
 		self._scheduler = scheduler
 		self._track_generation = 0
-		self._tracks_controller = TracksController(leds, scheduler)
+		self._tracks_controller = TracksController([
+			TrackController(leds, FootSwitch.ONE, scheduler),
+			TrackController(leds, FootSwitch.TWO, scheduler),
+			TrackController(leds, FootSwitch.THREE, scheduler),
+			TrackController(leds, FootSwitch.FOUR, scheduler),
+		], scheduler)
 		self._metronome = Metronome(FootSwitch.FIVE, leds)
 
 	def set_track(self, track: Live.Track.Track):
@@ -62,17 +75,19 @@ class SessionMode(Mode):
 
 
 class TracksController:
-	def __init__(self, leds: LEDController, scheduler, size = 4):
+	"""
+	Makes sure the main track has a track named <prefix>1, <prefix>2, ...
+	for each controller, each taking input from the main track. They go
+	immediately to the main track's right, after any other mode's tracks.
+	"""
+	def __init__(self, track_controllers, scheduler, prefix = "ch", monitoring = MONITORING_OFF, arm = True):
 		logger.info("Initializing Tracks controller")
-		self._size = size
+		self._size = len(track_controllers)
 		self._scheduler = scheduler
-		self._leds = leds
-		self._track_controllers = [
-			TrackController(leds, FootSwitch.ONE, scheduler),
-			TrackController(leds, FootSwitch.TWO, scheduler),
-			TrackController(leds, FootSwitch.THREE, scheduler),
-			TrackController(leds, FootSwitch.FOUR, scheduler),
-		]
+		self._prefix = prefix
+		self._monitoring = monitoring
+		self._arm = arm
+		self._track_controllers = track_controllers
 		# (track, callback) for each input routing listener we've added
 		self._routing_listeners = []
 
@@ -93,17 +108,24 @@ class TracksController:
 		tracks = song.tracks
 		for i, main_track in enumerate(tracks):
 			if main_track._live_ptr == track._live_ptr:
+				# Skip past tracks that belong to other modes
+				start = i
+				while (start + 1 < len(tracks)
+						and COMPANION_TRACK.match(tracks[start + 1].name)
+						and not tracks[start + 1].name.startswith(self._prefix)):
+					start += 1
 				for j in range(1, self._size + 1):
+					name = "{}{}".format(self._prefix, j)
 					channel_track = None
-					if i + j < len(tracks) and tracks[i + j].name == "ch{}".format(j):
-						channel_track = tracks[i + j]
+					if start + j < len(tracks) and tracks[start + j].name == name:
+						channel_track = tracks[start + j]
 					else:
-						channel_track = song.create_audio_track(i + j)
+						channel_track = song.create_audio_track(start + j)
 						tracks = song.tracks
-					channel_track.name = "ch{}".format(j)
+					channel_track.name = name
 					channel_track.color = main_track.color
-					channel_track.current_monitoring_state = 2 # Monitoring Off
-					channel_track.arm = True
+					channel_track.current_monitoring_state = self._monitoring
+					channel_track.arm = self._arm
 					update_routing = self._set_routing_callback(channel_track, main_track.name)
 					channel_track.add_available_input_routing_types_listener(update_routing)
 					self._routing_listeners.append((channel_track, update_routing))
