@@ -27,13 +27,12 @@ class BoomerangMode(Mode):
 
 	[1-3]: Loop 1-3. Press to record, press again to stop recording and
 	       play, press while playing to stop, press while stopped to play.
-	       Hold to erase the loop. Pressing a loop also selects it for stack.
+	       Pressing an overdubbing loop also stops it. Hold to erase the loop.
 	       If another loop is recording, it's as if its pedal was pressed first.
-	[4]: Stack. Toggles overdubbing on the selected loop (the last one
-	     pressed). Pressing the overdubbing loop's pedal goes back to
-	     playing, and pressing another loop's pedal ends the overdub.
-	     If a loop is recording, it's as if its pedal was pressed first, so
-	     the recording ends and that loop starts overdubbing.
+	[4]: Stack. Toggles overdub. While it's on, the leftmost playing loop
+	     overdubs, and moves to the next one if that loop stops. If a loop
+	     is recording, it's as if its pedal was pressed first, so the
+	     recording ends and the loop starts playing (and overdubbing).
 	[5]: Tap Tempo | hold to toggle metronome
 	[6]: Sync. When on, loops start and stop on the 1 of a bar and
 	     follow the song tempo. When off, loops are free running.
@@ -55,7 +54,7 @@ class BoomerangMode(Mode):
 
 		self._sync = False
 		self._auto_stop = None # index into AUTO_STOP_BARS, or None
-		self._selected = None # loop that stack applies to
+		self._stack = False
 
 		self._loops = [
 			LoopController(FootSwitch.ONE, leds, scheduler, self),
@@ -110,14 +109,9 @@ class BoomerangMode(Mode):
 		if not self._song.is_playing:
 			self._song.continue_playing()
 
-	def select(self, loop):
-		"""Called when a loop's pedal goes down. Stack follows the selected loop."""
-		if self._selected is not None and self._selected is not loop:
-			self._selected.end_overdub()
-		self._selected = loop
-
 	def state_changed(self):
-		self._update_settings_leds()
+		# Live doesn't allow changing a parameter from inside a notification
+		self._scheduler(0, self._update_overdub)
 
 	def finish_recording(self, pressed = None):
 		"""
@@ -130,13 +124,21 @@ class BoomerangMode(Mode):
 
 	def _toggle_stack(self, *a):
 		self.finish_recording()
-		loop = self._selected
-		if loop is None or not loop.has_looper():
-			return
-		if loop.is_overdubbing():
-			loop.end_overdub()
-		else:
-			loop.overdub()
+		self._stack = not self._stack
+		self._update_overdub()
+		self._update_settings_leds()
+
+	def _update_overdub(self):
+		"""With stack on, makes the leftmost playing loop the only one overdubbing"""
+		target = None
+		if self._stack:
+			target = next((l for l in self._loops if l.is_playing()), None)
+		for loop in self._loops:
+			if loop is target:
+				if not loop.is_overdubbing():
+					loop.overdub()
+			else:
+				loop.end_overdub()
 
 	def _toggle_sync(self, *a):
 		self._sync = not self._sync
@@ -159,8 +161,7 @@ class BoomerangMode(Mode):
 		self._update_settings_leds()
 
 	def _update_settings_leds(self):
-		stacking = self._selected is not None and self._selected.is_overdubbing()
-		self._set_led(FootSwitch.FOUR, stacking)
+		self._set_led(FootSwitch.FOUR, self._stack)
 		self._set_led(FootSwitch.SIX, self._sync)
 		for ind, fs in enumerate([FootSwitch.SEVEN, FootSwitch.EIGHT, FootSwitch.NINE, FootSwitch.TEN]):
 			self._set_led(fs, self._auto_stop == ind)
@@ -281,6 +282,10 @@ class LoopController:
 	def is_recording(self):
 		return self.has_looper() and self._looper.state() == Looper.RECORDING
 
+	def is_playing(self):
+		"""Whether the loop is playing, including overdubbing"""
+		return self.has_looper() and self._looper.state() in (Looper.PLAYING, Looper.OVERDUBBING)
+
 	def is_overdubbing(self):
 		return self.has_looper() and self._looper.state() == Looper.OVERDUBBING
 
@@ -306,7 +311,6 @@ class LoopController:
 
 	def press(self):
 		self._erase_on_hold = False
-		self._mode.select(self)
 		if not self.has_looper():
 			logger.info("No Looper on {}".format(self._track.name if liveobj_valid(self._track) else None))
 			return
@@ -318,10 +322,7 @@ class LoopController:
 			self._looper.play()
 		elif not self._has_loop:
 			self._record()
-		elif state == Looper.OVERDUBBING:
-			self._erase_on_hold = True
-			self._looper.play()
-		elif state == Looper.PLAYING:
+		elif state in (Looper.PLAYING, Looper.OVERDUBBING):
 			self._erase_on_hold = True
 			self._looper.stop()
 		else:
