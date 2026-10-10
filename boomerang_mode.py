@@ -1,10 +1,11 @@
 from .board import Mode
 from .led import LEDController, FAST_BLINK
 from .footswitch import FootSwitch, Layout, EventType
-from .session_mode import TracksController
+from .session_mode import TracksController, MONITORING_IN
 from .transport import Metronome
 from ableton.v2.base import liveobj_valid
 from functools import partial
+import math
 import logging
 import Live
 
@@ -17,29 +18,31 @@ class BoomerangMode(Mode):
 	"""
 	Mode that works like a Boomerang III phrase sampler. Like session mode,
 	it makes sure the set track has 3 tracks to its right (after any session
-	mode tracks), each armed and taking input from the set track:
+	mode tracks), each monitoring input from the set track:
 
 	[#fcb] [ch1] ... [ch4] [lp1] [lp2] [lp3]
 
-	Each loop lives in the first clip slot of its lp track.
+	Each lp track gets a Looper device, which is the loop. If this version
+	of Live can't add devices from a script, drop a Looper on each lp track.
 
 	[1-3]: Loop 1-3. Press to record, press again to stop recording and
 	       play, press while playing to stop, press while stopped to play.
-	       Hold to erase the loop.
-	[4]: Stack. When on, loops play on top of each other. When off, loops
-	     are serial: starting one stops the others.
+	       Hold to erase the loop. Pressing a loop also selects it for stack.
+	       If another loop is recording, it's as if its pedal was pressed first.
+	[4]: Stack. Toggles overdubbing on the selected loop (the last one
+	     pressed). Pressing the overdubbing loop's pedal goes back to
+	     playing, and pressing another loop's pedal ends the overdub.
+	     If a loop is recording, it's as if its pedal was pressed first, so
+	     the recording ends and that loop starts overdubbing.
 	[5]: Tap Tempo | hold to toggle metronome
-	[6]: Sync. When on, loops start and stop on the 1 of a bar.
+	[6]: Sync. When on, loops start and stop on the 1 of a bar and
+	     follow the song tempo. When off, loops are free running.
 	[7-10]: Auto stop after 1, 2, 4 or 8 bars: recording stops and the
 	        loop starts playing. Turning one on turns on sync. Press the
 	        lit one to turn auto stop off. Turning off sync turns them off.
 
-	LEDs for 1-3: off when empty, fast blink while recording or waiting
-	to start, on while playing, slow blink when stopped.
-
-	Sync works by setting Live's global launch quantization to 1 bar (or
-	None when sync is off) while this mode is active. The previous value
-	is restored when leaving the mode.
+	LEDs for 1-3: off when empty, fast blink while recording or
+	overdubbing, on while playing, slow blink when stopped.
 	"""
 	display_text = "BR"
 
@@ -49,32 +52,20 @@ class BoomerangMode(Mode):
 		self._scheduler = scheduler
 		self._song = Live.Application.get_application().get_document()
 		self._track_generation = 0
-		self._active = False
-		self._saved_quantization = None
 
 		self._sync = False
 		self._auto_stop = None # index into AUTO_STOP_BARS, or None
-		self._stack = False
+		self._selected = None # loop that stack applies to
 
 		self._loops = [
 			LoopController(FootSwitch.ONE, leds, scheduler, self),
 			LoopController(FootSwitch.TWO, leds, scheduler, self),
 			LoopController(FootSwitch.THREE, leds, scheduler, self),
 		]
-		self._tracks_controller = TracksController(self._loops, scheduler, prefix = "lp")
+		self._tracks_controller = TracksController(
+			self._loops, scheduler, prefix = "lp", monitoring = MONITORING_IN, arm = False)
 		self._metronome = Metronome(FootSwitch.FIVE, leds)
 		self._update_settings_leds()
-
-	def activate(self):
-		super(BoomerangMode, self).activate()
-		self._active = True
-		self._saved_quantization = self._song.clip_trigger_quantization
-		self._apply_quantization()
-
-	def deactivate(self):
-		self._restore_quantization()
-		self._active = False
-		super(BoomerangMode, self).deactivate()
 
 	def set_track(self, track: Live.Track.Track):
 		# Setting up the loop tracks modifies the song, which Live doesn't
@@ -99,35 +90,59 @@ class BoomerangMode(Mode):
 
 	def disconnect(self):
 		self._track_generation += 1
-		if self._active:
-			self._restore_quantization()
 		self._tracks_controller.set_main_track(None)
 		self._metronome.disconnect()
 
-	def record_length(self):
+	def is_synced(self):
+		return self._sync
+
+	def auto_stop_beats(self):
 		"""Length in beats that new recordings should stop at, or None to record until pressed"""
 		if not self._sync or self._auto_stop is None:
 			return None
-		beats_per_bar = self._song.signature_numerator * 4.0 / self._song.signature_denominator
-		return AUTO_STOP_BARS[self._auto_stop] * beats_per_bar
+		return AUTO_STOP_BARS[self._auto_stop] * self.beats_per_bar()
 
-	def loop_starting(self, loop):
-		"""Called when a loop is about to record or play"""
-		if not self._stack:
-			for other in self._loops:
-				if other is not loop:
-					other.stop()
+	def beats_per_bar(self):
+		return self._song.signature_numerator * 4.0 / self._song.signature_denominator
+
+	def start_transport(self):
+		"""The Looper only responds to the API while the song is playing"""
+		if not self._song.is_playing:
+			self._song.continue_playing()
+
+	def select(self, loop):
+		"""Called when a loop's pedal goes down. Stack follows the selected loop."""
+		if self._selected is not None and self._selected is not loop:
+			self._selected.end_overdub()
+		self._selected = loop
+
+	def state_changed(self):
+		self._update_settings_leds()
+
+	def finish_recording(self, pressed = None):
+		"""
+		Acts as if the pedal of a loop that's recording was pressed first,
+		which stops recording and starts playing it.
+		"""
+		for loop in self._loops:
+			if loop is not pressed and loop.is_recording():
+				loop.press()
 
 	def _toggle_stack(self, *a):
-		self._stack = not self._stack
-		self._update_settings_leds()
+		self.finish_recording()
+		loop = self._selected
+		if loop is None or not loop.has_looper():
+			return
+		if loop.is_overdubbing():
+			loop.end_overdub()
+		else:
+			loop.overdub()
 
 	def _toggle_sync(self, *a):
 		self._sync = not self._sync
 		if not self._sync:
 			self._auto_stop = None
-		self._apply_quantization()
-		self._update_settings_leds()
+		self._apply_sync()
 
 	def _select_auto_stop(self, ind, *a):
 		if self._auto_stop == ind:
@@ -136,22 +151,16 @@ class BoomerangMode(Mode):
 			self._auto_stop = ind
 			if not self._sync:
 				self._sync = True
-				self._apply_quantization()
+		self._apply_sync()
+
+	def _apply_sync(self):
+		for loop in self._loops:
+			loop.apply_settings()
 		self._update_settings_leds()
 
-	def _apply_quantization(self):
-		if not self._active:
-			return
-		self._song.clip_trigger_quantization = (
-			Live.Song.Quantization.q_bar if self._sync else Live.Song.Quantization.q_no_q)
-
-	def _restore_quantization(self):
-		if self._saved_quantization is not None:
-			self._song.clip_trigger_quantization = self._saved_quantization
-			self._saved_quantization = None
-
 	def _update_settings_leds(self):
-		self._set_led(FootSwitch.FOUR, self._stack)
+		stacking = self._selected is not None and self._selected.is_overdubbing()
+		self._set_led(FootSwitch.FOUR, stacking)
 		self._set_led(FootSwitch.SIX, self._sync)
 		for ind, fs in enumerate([FootSwitch.SEVEN, FootSwitch.EIGHT, FootSwitch.NINE, FootSwitch.TEN]):
 			self._set_led(fs, self._auto_stop == ind)
@@ -163,30 +172,102 @@ class BoomerangMode(Mode):
 			self._leds.off(footswitch.led_value())
 
 
+class Looper:
+	"""
+	Wraps one of Live's Looper devices. Uses the LooperDevice functions when
+	this version of Live has them, otherwise the device's State parameter.
+	"""
+	STOPPED = 0
+	RECORDING = 1
+	PLAYING = 2
+	OVERDUBBING = 3
+
+	def __init__(self, device):
+		self.device = device
+		self._params = {p.name: p for p in device.parameters}
+		self.state_param = self._params.get("State")
+
+	def state(self):
+		if self.state_param is None:
+			return self.STOPPED
+		return int(self.state_param.value)
+
+	def loop_length(self):
+		"""Length of the loop, or 0 if it's empty or this version of Live can't tell"""
+		return getattr(self.device, "loop_length", 0) or 0
+
+	def record(self):
+		self._transition("record", self.RECORDING)
+
+	def overdub(self):
+		self._transition("overdub", self.OVERDUBBING)
+
+	def play(self):
+		self._transition("play", self.PLAYING)
+
+	def stop(self):
+		self._transition("stop", self.STOPPED)
+
+	def clear(self):
+		if hasattr(self.device, "clear"):
+			self.device.clear()
+		else:
+			logger.error("This version of Live can't clear a Looper from a script")
+
+	def configure(self, synced):
+		self._set_item("Quantization", ["1 bar"] if synced else ["none"])
+		self._set_item("Tempo Control", ["follow song tempo"] if synced else ["none"])
+		# The #fcb track already monitors the input, so only play the loop
+		self._set_item("Monitor", ["never"])
+		self._set_item("Song Control", ["none"])
+
+	def _transition(self, fn, state):
+		if hasattr(self.device, fn):
+			getattr(self.device, fn)()
+		elif self.state_param is not None:
+			self.state_param.value = state
+
+	def _set_item(self, name, choices):
+		param = self._params.get(name)
+		if param is None or not param.is_quantized:
+			logger.info("Looper has no {} chooser".format(name))
+			return
+		items = [str(i).lower() for i in param.value_items]
+		for choice in choices:
+			if choice in items:
+				value = param.min + items.index(choice)
+				if param.value != value:
+					param.value = value
+				return
+		logger.info("Looper {} has none of {} in {}".format(name, choices, items))
+
+
 class LoopController:
 	"""
-	Controls one loop, which is the first clip slot of its track
+	Controls one loop, which is the Looper device on its track
 	"""
 	def __init__(self, footswitch: FootSwitch, leds: LEDController, scheduler, mode: BoomerangMode):
 		self._footswitch = footswitch
 		self._leds = leds
 		self._scheduler = scheduler
 		self._mode = mode
+		self._song = Live.Application.get_application().get_document()
 		self._track = None
-		self._clip_slot = None
-		self._clip = None
+		self._looper = None
+		# The Looper doesn't say whether it's empty, so keep track of it
+		self._has_loop = False
 		# Whether holding the current press should erase the loop. Only
 		# true if the loop already had something in it when it was pressed.
 		self._erase_on_hold = False
+		# Song time (in beats) to switch from recording to playing, for auto stop
+		self._auto_stop_at = None
 
 	def set_track(self, track: Live.Track.Track):
 		self._clear()
 		self._track = track
 		if self._track is not None:
-			self._clip_slot = self._track.clip_slots[0]
-			self._clip_slot.add_has_clip_listener(self._update_clip)
-			self._clip_slot.add_is_triggered_listener(self._update_led)
-		self._update_clip()
+			self._track.add_devices_listener(self._find_looper)
+		self._find_looper()
 
 	def get_layout(self):
 		l = Layout()
@@ -194,104 +275,163 @@ class LoopController:
 		l.listen(self._footswitch, EventType.LONG_PRESS, self._held)
 		return l
 
-	def stop(self):
-		"""Stops this loop (at the next bar if sync is on)"""
-		if not self._valid():
-			return
-		if self._clip_slot.has_clip:
-			clip = self._clip_slot.clip
-			if clip.is_recording or clip.is_playing or clip.is_triggered:
-				self._track.stop_all_clips()
-		elif self._clip_slot.is_triggered:
-			self._track.stop_all_clips()
+	def has_looper(self):
+		return self._looper is not None and liveobj_valid(self._looper.device)
 
-	def _valid(self):
-		return self._clip_slot is not None and liveobj_valid(self._clip_slot) and liveobj_valid(self._track)
+	def is_recording(self):
+		return self.has_looper() and self._looper.state() == Looper.RECORDING
+
+	def is_overdubbing(self):
+		return self.has_looper() and self._looper.state() == Looper.OVERDUBBING
+
+	def overdub(self):
+		if not self.has_looper():
+			return
+		self._mode.start_transport()
+		self._cancel_auto_stop()
+		self._has_loop = True
+		self._looper.overdub()
+
+	def end_overdub(self):
+		if self.is_overdubbing():
+			self._looper.play()
+
+	def apply_settings(self):
+		if self.has_looper():
+			self._looper.configure(self._mode.is_synced())
 
 	def _footswitch_down(self, *a):
-		self._erase_on_hold = False
-		if not self._valid():
-			return
-		slot = self._clip_slot
-		if not slot.has_clip:
-			if slot.is_triggered:
-				# Waiting to start recording. Cancel it.
-				self._track.stop_all_clips()
-			else:
-				self._mode.loop_starting(self)
-				self._record()
-			return
+		self._mode.finish_recording(self)
+		self.press()
 
-		clip = slot.clip
-		self._erase_on_hold = True
-		if clip.is_recording:
+	def press(self):
+		self._erase_on_hold = False
+		self._mode.select(self)
+		if not self.has_looper():
+			logger.info("No Looper on {}".format(self._track.name if liveobj_valid(self._track) else None))
+			return
+		self._mode.start_transport()
+		state = self._looper.state()
+		if state == Looper.RECORDING:
 			# Ends the recording and starts playing the loop
-			slot.fire()
-		elif clip.is_playing or clip.is_triggered:
-			self._track.stop_all_clips()
+			self._cancel_auto_stop()
+			self._looper.play()
+		elif not self._has_loop:
+			self._record()
+		elif state == Looper.OVERDUBBING:
+			self._erase_on_hold = True
+			self._looper.play()
+		elif state == Looper.PLAYING:
+			self._erase_on_hold = True
+			self._looper.stop()
 		else:
-			self._mode.loop_starting(self)
-			slot.fire()
+			self._erase_on_hold = True
+			self._looper.play()
 
 	def _record(self):
-		length = self._mode.record_length()
-		if length is None:
-			self._clip_slot.fire()
+		self._has_loop = True
+		beats = self._mode.auto_stop_beats()
+		if beats is not None:
+			# Sync is on, so recording starts on the next bar
+			bar = self._mode.beats_per_bar()
+			start = math.ceil((self._song.current_song_time - 0.01) / bar) * bar
+			self._auto_stop_at = start + beats
+			if not self._song.current_song_time_has_listener(self._check_auto_stop):
+				self._song.add_current_song_time_listener(self._check_auto_stop)
+		self._looper.record()
+
+	def _check_auto_stop(self):
+		if self._auto_stop_at is None:
 			return
-		try:
-			self._clip_slot.fire(record_length = length)
-		except TypeError:
-			logger.error("This version of Live can't record a fixed length. Recording until pressed.")
-			self._clip_slot.fire()
+		if not self.has_looper() or self._looper.state() != Looper.RECORDING:
+			if self.has_looper() and self._looper.state() == Looper.STOPPED:
+				# Still waiting for the bar to start recording
+				return
+			self._cancel_auto_stop()
+			return
+		# Ask for play a beat early. The Looper is quantized to the bar, so
+		# it switches exactly on the bar line.
+		early = min(1.0, self._mode.beats_per_bar() / 2)
+		if self._song.current_song_time >= self._auto_stop_at - early:
+			self._cancel_auto_stop()
+			self._looper.play()
+
+	def _cancel_auto_stop(self):
+		self._auto_stop_at = None
+		if self._song.current_song_time_has_listener(self._check_auto_stop):
+			self._song.remove_current_song_time_listener(self._check_auto_stop)
 
 	def _held(self, *a):
 		if self._erase_on_hold:
 			self._erase_on_hold = False
-			self._scheduler(0, self._erase)
+			self._erase()
 
 	def _erase(self):
-		if self._valid() and self._clip_slot.has_clip:
-			self._clip_slot.set_fire_button_state(False)
-			self._clip_slot.delete_clip()
+		if not self.has_looper():
+			return
+		self._cancel_auto_stop()
+		self._looper.stop()
+		self._looper.clear()
+		self._has_loop = False
+		self._update_led()
+
+	def _find_looper(self):
+		looper = None
+		if self._track is not None and liveobj_valid(self._track):
+			looper = next((d for d in self._track.devices if d.class_name == "Looper"), None)
+			if looper is None and hasattr(self._track, "insert_device"):
+				# Adding a device modifies the song, so do it outside of any notification
+				self._scheduler(0, self._insert_looper)
+		if self._looper is not None and looper is not None and self._looper.device == looper:
+			return
+		self._clear_looper()
+		if looper is not None:
+			self._looper = Looper(looper)
+			if self._looper.state_param is not None:
+				self._looper.state_param.add_value_listener(self._state_changed)
+			self._has_loop = self._looper.state() != Looper.STOPPED or self._looper.loop_length() > 0
+			self.apply_settings()
+		self._update_led()
+
+	def _insert_looper(self):
+		if self._track is None or not liveobj_valid(self._track) or self.has_looper():
+			return
+		try:
+			self._track.insert_device("Looper")
+		except Exception as e:
+			logger.error("Couldn't add a Looper to {}: {}".format(self._track.name, e))
+
+	def _state_changed(self):
+		if self.has_looper() and self._looper.state() != Looper.STOPPED:
+			self._has_loop = True
+		self._update_led()
+		self._mode.state_changed()
 
 	def _clear(self):
-		self._clear_clip()
-		if self._clip_slot is not None and liveobj_valid(self._clip_slot):
-			if self._clip_slot.has_clip_has_listener(self._update_clip):
-				self._clip_slot.remove_has_clip_listener(self._update_clip)
-			if self._clip_slot.is_triggered_has_listener(self._update_led):
-				self._clip_slot.remove_is_triggered_listener(self._update_led)
-		self._clip_slot = None
+		self._cancel_auto_stop()
+		self._clear_looper()
+		if self._track is not None and liveobj_valid(self._track):
+			if self._track.devices_has_listener(self._find_looper):
+				self._track.remove_devices_listener(self._find_looper)
 		self._track = None
-
-	def _clear_clip(self):
-		if self._clip is not None and liveobj_valid(self._clip):
-			if self._clip.playing_status_has_listener(self._update_led):
-				self._clip.remove_playing_status_listener(self._update_led)
-			if self._clip.is_recording_has_listener(self._update_led):
-				self._clip.remove_is_recording_listener(self._update_led)
-		self._clip = None
-
-	def _update_clip(self):
-		self._clear_clip()
-		if self._valid() and self._clip_slot.has_clip:
-			self._clip = self._clip_slot.clip
-			self._clip.add_playing_status_listener(self._update_led)
-			self._clip.add_is_recording_listener(self._update_led)
 		self._update_led()
+
+	def _clear_looper(self):
+		if self._looper is not None and self._looper.state_param is not None and liveobj_valid(self._looper.state_param):
+			if self._looper.state_param.value_has_listener(self._state_changed):
+				self._looper.state_param.remove_value_listener(self._state_changed)
+		self._looper = None
+		self._has_loop = False
 
 	def _update_led(self):
 		led = self._footswitch.led_value()
-		if not self._valid():
+		if not self.has_looper() or not self._has_loop:
 			self._leds.off(led)
-		elif self._clip is None or not liveobj_valid(self._clip):
-			if self._clip_slot.is_triggered:
-				self._leds.blink_on(led, FAST_BLINK)
-			else:
-				self._leds.off(led)
-		elif self._clip.is_recording or self._clip.is_triggered:
+			return
+		state = self._looper.state()
+		if state in (Looper.RECORDING, Looper.OVERDUBBING):
 			self._leds.blink_on(led, FAST_BLINK)
-		elif self._clip.is_playing:
+		elif state == Looper.PLAYING:
 			self._leds.on(led)
 		else:
 			self._leds.blink_on(led)

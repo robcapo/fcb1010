@@ -12,6 +12,10 @@ logger = logging.getLogger(__name__)
 # Tracks that modes create next to the #fcb track, e.g. ch1 or lp2
 COMPANION_TRACK = re.compile(r"^(ch|lp)\d+$")
 
+# Values for Track.current_monitoring_state
+MONITORING_IN = 0
+MONITORING_OFF = 2
+
 class SessionMode(Mode):
 	"""
 	Mode for jamming / recording clips in a session.
@@ -76,11 +80,13 @@ class TracksController:
 	for each controller, each taking input from the main track. They go
 	immediately to the main track's right, after any other mode's tracks.
 	"""
-	def __init__(self, track_controllers, scheduler, prefix = "ch"):
+	def __init__(self, track_controllers, scheduler, prefix = "ch", monitoring = MONITORING_OFF, arm = True):
 		logger.info("Initializing Tracks controller")
 		self._size = len(track_controllers)
 		self._scheduler = scheduler
 		self._prefix = prefix
+		self._monitoring = monitoring
+		self._arm = arm
 		self._track_controllers = track_controllers
 		# (track, callback) for each input routing listener we've added
 		self._routing_listeners = []
@@ -118,8 +124,8 @@ class TracksController:
 						tracks = song.tracks
 					channel_track.name = name
 					channel_track.color = main_track.color
-					channel_track.current_monitoring_state = 2 # Monitoring Off
-					channel_track.arm = True
+					channel_track.current_monitoring_state = self._monitoring
+					channel_track.arm = self._arm
 					update_routing = self._set_routing_callback(channel_track, main_track.name)
 					channel_track.add_available_input_routing_types_listener(update_routing)
 					self._routing_listeners.append((channel_track, update_routing))
