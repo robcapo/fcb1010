@@ -4,6 +4,7 @@ from .led import LEDController
 from .effects_mode import EffectsMode
 from .loop_mode import LoopMode
 from .session_mode import SessionMode
+from .boomerang_mode import BoomerangMode
 from .racks_controller import RacksControllerMode
 from .board import Board
 from .display import Display
@@ -43,6 +44,7 @@ class FcbSurface(ControlSurface):
 			# self._board.add_mode(EffectsMode(leds.copy([f.led_value() for f in numbered_footswitches()])))
 			# self._board.add_mode(LoopMode(leds.copy([f.led_value() for f in numbered_footswitches()])))
 			self._board.add_mode(SessionMode(leds.copy([f.led_value() for f in numbered_footswitches()]), self.schedule_message))
+			self._board.add_mode(BoomerangMode(leds.copy([f.led_value() for f in numbered_footswitches()]), self.schedule_message))
 
 			self._midi_callback = event_bus.midi_callback
 			self.add_received_midi_listener(self._midi_callback)
