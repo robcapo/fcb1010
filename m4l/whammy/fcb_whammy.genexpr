@@ -1,0 +1,180 @@
+// FCB Whammy: a DigiTech Whammy style pitch shifter.
+//
+// in1, in2: audio in (left, right). The shifter runs on their mix, so it's
+//           built for a mono source like a guitar.
+// out1, out2: audio out (left, right)
+//
+// Params:
+//   mode: which preset, 0-20. See the table below.
+//   treadle: the pedal, 0 (heel down) to 127 (toe down).
+//   on: 0 passes the input through untouched, 1 is the effect.
+//
+// Whammy presets sweep from the heel interval to the toe interval with
+// only the shifted signal out, so heel down is the dry sound. Harmony
+// presets do the same but keep the dry signal under the shifted one.
+// Detune presets mix the dry signal with one voice tuned slightly up and
+// one slightly down, and ignore the treadle.
+
+Param mode(1, min = 0, max = 20);
+Param treadle(0, min = 0, max = 127);
+Param on(1, min = 0, max = 1);
+
+// The input, as a ring buffer (about 5 seconds at 48kHz)
+Data ring(262144);
+// One row per grain, two grains per voice: delay in samples, age in samples
+Data grains(4, 2);
+
+History wi(0);
+History lastm(-1);
+History tsm(0);
+History onsm(1);
+
+ringsize = dim(ring);
+// The treadle glides like the pedal instead of jumping
+tcoef = exp(-1 / mstosamps(20));
+oncoef = exp(-1 / mstosamps(5));
+// How far back to look for a spot that lines up with the grain that's
+// playing. A bit more than the period of a guitar's low E.
+search = floor(mstosamps(15));
+// How many samples to compare when lining grains up
+cmplen = 128;
+
+m = floor(mode);
+// kind: 0 whammy, 1 harmony, 2 detune
+// heel and toe are in semitones; for detune, toe is the depth in cents
+kind = 0;
+heel = 0;
+toe = 0;
+if (m == 0) { toe = 24; }           // 2 Oct Up
+else if (m == 1) { toe = 12; }      // Oct Up
+else if (m == 2) { toe = 7; }       // 5th Up
+else if (m == 3) { toe = 5; }       // 4th Up
+else if (m == 4) { toe = -2; }      // 2nd Down
+else if (m == 5) { toe = -5; }      // 4th Down
+else if (m == 6) { toe = -7; }      // 5th Down
+else if (m == 7) { toe = -12; }     // Oct Down
+else if (m == 8) { toe = -24; }     // 2 Oct Down
+else if (m == 9) { toe = -36; }     // Dive Bomb
+else if (m == 10) { kind = 2; toe = 25; }  // Deep Detune
+else if (m == 11) { kind = 2; toe = 10; }  // Shallow Detune
+else if (m == 12) { kind = 1; heel = -12; toe = 12; } // Oct Down / Oct Up
+else if (m == 13) { kind = 1; heel = -7; toe = -5; }  // 5th Down / 4th Down
+else if (m == 14) { kind = 1; heel = -5; toe = -4; }  // 4th Down / 3rd Down
+else if (m == 15) { kind = 1; heel = 7; toe = 10; }   // 5th Up / 7th Up
+else if (m == 16) { kind = 1; heel = 7; toe = 9; }    // 5th Up / 6th Up
+else if (m == 17) { kind = 1; heel = 5; toe = 7; }    // 4th Up / 5th Up
+else if (m == 18) { kind = 1; heel = 4; toe = 5; }    // 3rd Up / 4th Up
+else if (m == 19) { kind = 1; heel = 3; toe = 4; }    // b3rd Up / 3rd Up
+else { kind = 1; heel = 2; toe = 4; }                 // 2nd Up / 3rd Up
+
+target = clamp(treadle / 127, 0, 1);
+tsm = target + (tsm - target) * tcoef;
+onsm = on + (onsm - on) * oncoef;
+
+// Ratio of each voice. Voice 2 is only used by detune presets.
+st = heel + (toe - heel) * tsm;
+r1 = pow(2, st / 12);
+r2 = 1;
+nvoices = 1;
+if (kind == 2) {
+	r1 = pow(2, toe / 1200);
+	r2 = pow(2, -toe / 1200);
+	nvoices = 2;
+}
+
+// Grain length. Grains read through about 40ms of input whatever the
+// shift, so high presets get short grains and stay close to real time.
+grainlen = mstosamps(40) / max(pow(2, max(max(heel, toe), 0) / 12), 1);
+
+// Changing preset restarts the grains half a grain apart
+if (m != lastm) {
+	for (g = 0; g < 4; g += 1) {
+		poke(grains, 4, g, 0);
+		poke(grains, (g % 2) * grainlen * 0.5, g, 1);
+	}
+}
+lastm = m;
+
+x = (in1 + in2) * 0.5;
+poke(ring, x, wi, 0);
+
+// Each voice is two overlapping grains with raised cosine windows that sum
+// to one. A grain reads the input back at the voice's ratio, so its delay
+// grows or shrinks over its life. When a grain ends, the next one starts at
+// the delay where the input best lines up with what the other grain is
+// playing, so the two blend without cancelling each other out.
+v1 = 0;
+v2 = 0;
+for (v = 0; v < nvoices; v += 1) {
+	r = r1;
+	if (v == 1) {
+		r = r2;
+	}
+	// Shortest delay a grain can start at without reading past the input
+	dmin = max(r - 1, 0) * grainlen + 4;
+	vout = 0;
+	for (g = 0; g < 2; g += 1) {
+		row = v * 2 + g;
+		dly = peek(grains, row, 0);
+		age = peek(grains, row, 1);
+		if (age >= grainlen) {
+			age = 0;
+			other = floor(peek(grains, v * 2 + 1 - g, 0));
+			best = dmin;
+			bestc = -1e9;
+			for (k = 0; k < search; k += 2) {
+				cand = floor(dmin) + k;
+				s = 0;
+				en = 0.000001;
+				for (j = 0; j < cmplen; j += 2) {
+					p = peek(ring, wi - cand - j, 0, boundmode = "wrap");
+					q = peek(ring, wi - other - j, 0, boundmode = "wrap");
+					s += p * q;
+					en += p * p;
+				}
+				corr = s / sqrt(en);
+				if (corr > bestc) {
+					bestc = corr;
+					best = cand;
+				}
+			}
+			dly = best;
+		}
+		dly = clamp(dly, 2, ringsize - cmplen - search - 4);
+		w = 0.5 - 0.5 * cos(twopi * age / grainlen);
+		vout += w * peek(ring, wi - dly, 0, interp = "cubic", boundmode = "wrap");
+		poke(grains, dly + 1 - r, row, 0);
+		poke(grains, age + 1, row, 1);
+	}
+	if (v == 0) {
+		v1 = vout;
+	}
+	else {
+		v2 = vout;
+	}
+}
+wi = wrap(wi + 1, 0, ringsize);
+
+drygain = 0;
+wet = v1;
+if (kind == 0) {
+	// Fade to the dry signal as the shift reaches zero, so heel down has
+	// no grain artifacts or latency
+	z = clamp(abs(st) / 0.25, 0, 1);
+	drygain = 1 - z;
+	wet = v1 * z;
+}
+else if (kind == 1) {
+	drygain = 0.707;
+	wet = v1 * 0.707;
+}
+else {
+	drygain = 0.7;
+	wet = (v1 + v2) * 0.35;
+}
+
+drygain = mix(1, drygain, onsm);
+wet = wet * onsm;
+
+out1 = in1 * drygain + wet;
+out2 = in2 * drygain + wet;
