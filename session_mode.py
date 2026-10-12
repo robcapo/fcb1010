@@ -112,7 +112,17 @@ class TracksController:
 					self._routing_listeners.append((channel_track, update_routing))
 					update_routing()
 					self._track_controllers[j - 1].set_track(channel_track)
+				self._listen_for_main_track_rename(main_track)
 				break
+
+	def _listen_for_main_track_rename(self, main_track):
+		# Routing is matched by the main track's name, so re-apply it when the name changes
+		def on_rename():
+			for _, update_routing in self._routing_listeners:
+				update_routing()
+		main_track.add_name_listener(on_rename)
+		self._main_track = main_track
+		self._main_track_name_listener = on_rename
 
 	def _clear_routing_listeners(self):
 		for track, cb in self._routing_listeners:
