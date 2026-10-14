@@ -24,6 +24,13 @@ class Mode:
 	def set_layout_changed_callback(self, callback):
 		pass
 
+	def set_overlay_callbacks(self, show_overlay, hide_overlay):
+		"""
+		show_overlay(mode) temporarily hands the footswitches, LEDs and display
+		to another mode, hide_overlay() gives them back to this one.
+		"""
+		pass
+
 	def get_layout(self):
 		raise NotImplementedError()
 
@@ -43,6 +50,9 @@ class Board:
 		self._modes = []
 		self._current_mode = None
 		self._current_mode_layout = None
+		# A temporary mode shown on top of the current one, see Mode.set_overlay_callbacks
+		self._overlay = None
+		self._overlay_layout = None
 		self._mode_led_values = [20, 21, 22]
 		for val in self._mode_led_values:
 			self._leds.off(val)
@@ -60,6 +70,7 @@ class Board:
 
 	def add_mode(self, mode: Mode):
 		mode.set_layout_changed_callback(partial(self._refresh_layout, len(self._modes)))
+		mode.set_overlay_callbacks(partial(self._show_overlay, len(self._modes)), partial(self._hide_overlay, len(self._modes)))
 		self._modes.append(mode)
 
 		if self._current_track is not None:
@@ -96,6 +107,7 @@ class Board:
 		if self._current_mode == ind:
 			logger.info("Not changing mode. It's already set.")
 			return
+		self._close_overlay()
 		if self._current_mode is not None:
 			self._modes[self._current_mode].deactivate()
 			self._footswitch_events.uninstall(self._current_mode_layout)
@@ -126,8 +138,37 @@ class Board:
 		# just use the first track for now. If there are no tracks, clear the modes
 		self._set_track(tracks[0] if len(tracks) > 0 else None)
 
+	def _show_overlay(self, ind, overlay: Mode):
+		if self._current_mode != ind:
+			return
+		self._hide_overlay(ind)
+		self._modes[ind].deactivate()
+		self._footswitch_events.uninstall(self._current_mode_layout)
+		self._overlay = overlay
+		self._overlay.activate()
+		self._overlay_layout = self._overlay.get_layout()
+		self._footswitch_events.install(self._overlay_layout)
+		self._display.show(self._overlay.display_text)
+
+	def _hide_overlay(self, ind):
+		if self._overlay is None or self._current_mode != ind:
+			return
+		self._close_overlay()
+		self._modes[ind].activate()
+		self._install_mode_layout(ind)
+		self._display.show(self._modes[ind].display_text)
+
+	def _close_overlay(self):
+		if self._overlay is None:
+			return
+		self._footswitch_events.uninstall(self._overlay_layout)
+		self._overlay.deactivate()
+		self._overlay = None
+		self._overlay_layout = None
+
 	def _refresh_layout(self, ind):
-		if self._current_mode == ind:
+		# While an overlay is shown the mode's layout is installed when it's hidden
+		if self._current_mode == ind and self._overlay is None:
 			self._footswitch_events.uninstall(self._current_mode_layout)
 			self._install_mode_layout(ind)
 
