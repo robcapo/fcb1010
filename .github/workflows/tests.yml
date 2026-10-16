@@ -1,0 +1,18 @@
+name: Tests
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          # The Python version Live 12 embeds
+          python-version: "3.11"
+      - run: pip install pytest
+      - run: python -m pytest -v
