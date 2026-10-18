@@ -1,80 +1,100 @@
 // Klone: a Klon Centaur style overdrive for gen~.
 // Signal levels are treated as volts: 1.0 (0 dBFS) = 1 V peak.
 // Keep this file in step with reference.py, which mirrors it for testing.
+//
+// This is a template: build.py copies everything between the CHANNEL
+// markers, and every other line containing @, once per channel, replacing
+// @ with the channel number. The code uses no user functions, so every
+// filter's state is an explicit History.
 
 Param p_gain(5, min=0, max=10);
 Param p_treble(5, min=0, max=10);
 Param p_output(5, min=0, max=10);
 
-// One-pole lowpass, topology-preserving transform (zero-delay feedback).
-lp1(x, fc) {
-	History z(0);
-	g = tan(pi * fc / samplerate);
-	v = (x - z) * g / (1 + g);
-	y = v + z;
-	z = y + v;
-	return y;
-}
+History s_gain(0.5);
+History s_treble(0);
+History s_output(0.33);
+History z_in@(0);
+History z_hp@(0);
+History z_pre@(0);
+History z_sum@(0);
+History z_tone@(0);
+History z_out@(0);
+History u1_@(0);
 
-// One-pole lowpass with a fixed cutoff; used as a parameter smoother.
-smoother(x, coeff) {
-	History s(0);
-	s = s + (x - s) * coeff;
-	return s;
-}
+// 20 ms parameter smoothing.
+k = 1 - exp(-1 / (0.02 * samplerate));
+s_gain = s_gain + (p_gain / 10 - s_gain) * k;
+s_treble = s_treble + ((p_treble - 5) * 2.4 - s_treble) * k;
+// Audio-taper pot law: 0 at 0, 1 at 1, about 15% at noon.
+s_output = s_output + (2.2 * (pow(30, p_output / 10) - 1) / 29 - s_output) * k;
+
+gain_t = s_gain;
+taper = (pow(30, gain_t) - 1) / 29;
+treble_amp = dbtoa(s_treble);
+out_amp = s_output;
+
+// One-pole TPT lowpass coefficients, G = g / (1 + g) with g = tan(pi fc / sr).
+// Each filter below is: v = (x - z) * G; y = v + z; z = y + v.
+g = tan(pi * 16 / samplerate);
+c_in = g / (1 + g);
+g = tan(pi * 400 / samplerate);
+c_hp = g / (1 + g);
+// The clipping stage's feedback cap closes the top end in as gain goes up.
+g = tan(pi * 12000 / (1 + 3 * taper) / samplerate);
+c_pre = g / (1 + g);
+g = tan(pi * 6500 / samplerate);
+c_sum = g / (1 + g);
+g = tan(pi * 1200 / samplerate);
+c_tone = g / (1 + g);
+g = tan(pi * 8 / samplerate);
+c_out = g / (1 + g);
+
+// CHANNEL BEGIN
+// Input buffer coupling caps.
+v = (in@ - z_in@) * c_in;
+lp = v + z_in@;
+z_in@ = lp + v;
+xin@ = in@ - lp;
+
+// Clipping stage: the gain is applied to content above about 400 Hz,
+// which with the feedback cap gives the dirty path its mid hump.
+v = (xin@ - z_hp@) * c_hp;
+lp = v + z_hp@;
+z_hp@ = lp + v;
+pre@ = xin@ + 120 * taper * (xin@ - lp);
+v = (pre@ - z_pre@) * c_pre;
+lp = v + z_pre@;
+z_pre@ = lp + v;
 
 // Germanium diode pair to ground (1N34A), modelled as x / sqrt(1 + x^2)
 // with first-order antiderivative anti-aliasing. The antiderivative is
 // sqrt(1 + x^2), and (F(u) - F(u1)) / (u - u1) simplifies exactly to
 // (u + u1) / (F(u) + F(u1)), so there is no divide-by-zero case.
-diodes(x, vf) {
-	History u1(0);
-	u = x / vf;
-	y = (u + u1) / (sqrt(1 + u * u) + sqrt(1 + u1 * u1));
-	u1 = u;
-	return y * vf;
-}
+u = lp / 0.35;
+dirty@ = 0.35 * (u + u1_@) / (sqrt(1 + u * u) + sqrt(1 + u1_@ * u1_@));
+u1_@ = u;
 
-// Audio-taper pot law: 0 at 0, 1 at 1, about 15% at noon.
-audio_taper(t) {
-	return (pow(30, t) - 1) / 29;
-}
+// Dual-gang gain pot: the second gang turns the clean path down as
+// the first turns the gain up, but never all the way off.
+clean@ = xin@ * (1 - 0.9 * gain_t);
 
-channel(x, gain_t, treble_db, out_amp) {
-	// Input buffer coupling caps.
-	xin = x - lp1(x, 16);
+// Summing amp: the clipped path goes in at twice the weight of the clean
+// one, and the feedback cap rolls off the fizz.
+x = clean@ + 2 * dirty@;
+v = (x - z_sum@) * c_sum;
+summed@ = v + z_sum@;
+z_sum@ = summed@ + v;
 
-	// Clipping stage: the gain is applied to content above about 400 Hz
-	// and the feedback cap closes the top end in as gain goes up, which
-	// is where the mid hump comes from.
-	taper = audio_taper(gain_t);
-	hp = xin - lp1(xin, 400);
-	pre = xin + 120 * taper * hp;
-	pre = lp1(pre, 12000 / (1 + 3 * taper));
-	dirty = diodes(pre, 0.35);
+// Treble: active first-order high shelf around 1.2 kHz.
+v = (summed@ - z_tone@) * c_tone;
+lp = v + z_tone@;
+z_tone@ = lp + v;
+y = (lp + treble_amp * (summed@ - lp)) * out_amp;
 
-	// Dual-gang gain pot: the second gang turns the clean path down as
-	// the first turns the gain up, but never all the way off.
-	clean = xin * (1 - 0.9 * gain_t);
-
-	// Summing amp: the clipped path goes in at twice the weight of the clean
-	// one, and the feedback cap rolls off the fizz.
-	summed = lp1(clean + 2 * dirty, 6500);
-
-	// Treble: active first-order high shelf around 1.2 kHz.
-	lo = lp1(summed, 1200);
-	toned = lo + dbtoa(treble_db) * (summed - lo);
-
-	// Output volume, then the output coupling cap.
-	y = toned * out_amp;
-	return y - lp1(y, 8);
-}
-
-// 20 ms parameter smoothing.
-k = 1 - exp(-1 / (0.02 * samplerate));
-gain_t = smoother(p_gain / 10, k);
-treble_db = smoother((p_treble - 5) * 2.4, k);
-out_amp = smoother(2.2 * audio_taper(p_output / 10), k);
-
-out1 = channel(in1, gain_t, treble_db, out_amp);
-out2 = channel(in2, gain_t, treble_db, out_amp);
+// Output volume, then the output coupling cap.
+v = (y - z_out@) * c_out;
+lp = v + z_out@;
+z_out@ = lp + v;
+out@ = y - lp;
+// CHANNEL END

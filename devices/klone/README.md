@@ -43,9 +43,12 @@ and by the measurements in `reference.py`.
 
 ## Files
 
-- `klone.genexpr`: the DSP, embedded in the device's `gen~`.
+- `klone.genexpr`: the DSP, written once as a template for one channel.
+  `build.py` expands it for left and right and embeds it in the device's
+  `gen~`.
 - `reference.py`: a Python mirror of the DSP. `python3 reference.py`
-  prints the frequency response at several Gain and Treble settings,
+  first runs the expanded gen~ code itself in Python and checks it matches
+  the model sample for sample, then prints the frequency response at several Gain and Treble settings,
   clipping levels, the Output law and an aliasing check.
 - `build.py`: regenerates `Klone.maxpat` and `Klone.amxd` from
   `klone.genexpr`. Run it after changing the DSP.

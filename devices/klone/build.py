@@ -138,9 +138,31 @@ def amxd(patch_json):
 	return chunk(b"ampf", b"aaaa") + chunk(b"meta", b"\x00\x00\x00\x00") + chunk(b"ptch", body)
 
 
-def main():
+def render(template, channels=2):
+	"""Expand the @ channel template in klone.genexpr into codebox code."""
+	head, rest = template.split("// CHANNEL BEGIN\n")
+	block, tail = rest.split("// CHANNEL END\n")
+	out = []
+	for text in head.splitlines(keepends=True):
+		if "@" in text and not text.lstrip().startswith("//"):
+			out.extend(text.replace("@", str(c)) for c in range(1, channels + 1))
+		else:
+			out.append(text)
+	for c in range(1, channels + 1):
+		out.append(f"// Channel {c}\n")
+		out.append(block.replace("@", str(c)))
+		out.append("\n")
+	out.append(tail)
+	return "".join(out).rstrip("\n") + "\n"
+
+
+def load_code():
 	with open(os.path.join(HERE, "klone.genexpr")) as f:
-		code = f.read()
+		return render(f.read())
+
+
+def main():
+	code = load_code()
 	patch_json = json.dumps(device_patcher(code), indent="\t")
 	with open(os.path.join(HERE, "Klone.maxpat"), "w") as f:
 		f.write(patch_json + "\n")

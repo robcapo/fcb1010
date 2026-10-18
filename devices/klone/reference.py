@@ -1,7 +1,8 @@
 """Python mirror of klone.genexpr, for checking the DSP without Max.
 
-Run it directly to print frequency responses, clipping levels and an
-aliasing check:
+Run it directly to check that the gen~ code build.py ships matches this
+model sample for sample, then print frequency responses, clipping levels
+and an aliasing check:
 
 	python3 reference.py
 
@@ -10,6 +11,9 @@ a line of the gen~ code.
 """
 
 import math
+import os
+import re
+import sys
 
 import numpy as np
 
@@ -89,7 +93,68 @@ def tone_gain_db(freq, amp, sr=48000, **knobs):
 	return 20 * math.log10(max(math.hypot(c, s), 1e-12) / amp), np.max(np.abs(tail)), ref
 
 
+class GenCodebox:
+	"""Runs the shipped codebox code (build.render of klone.genexpr) in Python.
+
+	Handles the subset of GenExpr the device uses: Param and History
+	declarations, plain assignments, and a few math operators. Assignments
+	take effect immediately, as in a gen~ codebox.
+	"""
+
+	def __init__(self, code, sr=48000, **params):
+		code = re.sub(r"//[^\n]*", "", code)
+		self.env = {
+			"pi": math.pi, "samplerate": sr, "exp": math.exp, "pow": math.pow,
+			"tan": math.tan, "sqrt": math.sqrt, "dbtoa": lambda db: 10 ** (db / 20),
+		}
+		body = []
+		for stmt in (t.strip() for t in code.split(";")):
+			if not stmt:
+				continue
+			decl = re.fullmatch(r"(Param|History)\s+(\w+)\(([^,)]*)[^)]*\)", stmt)
+			if decl:
+				self.env[decl.group(2)] = float(decl.group(3))
+			else:
+				body.append(stmt)
+		for name, value in params.items():
+			self.env["p_" + name] = float(value)
+		self.body = compile("\n".join(body), "codebox", "exec")
+
+	def __call__(self, in1, in2):
+		env = self.env
+		env["in1"], env["in2"] = in1, in2
+		exec(self.body, env)
+		return env["out1"], env["out2"]
+
+
+def check_codebox(sr=48000):
+	"""Compare the shipped gen~ code against the Python model, sample by sample."""
+	sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+	import build
+	code = build.load_code()
+	rng = np.random.default_rng(1)
+	n = sr // 2
+	x = 0.3 * np.sin(2 * np.pi * 220 * np.arange(n) / sr) + 0.05 * rng.standard_normal(n)
+	worst = 0.0
+	for knobs in ({"gain": 0, "treble": 5, "output": 5}, {"gain": 7, "treble": 2, "output": 8}, {"gain": 10, "treble": 10, "output": 3}):
+		box = GenCodebox(code, sr, **knobs)
+		got = np.array([box(float(s), float(-s)) for s in x])
+		want = process(x, sr=sr, **knobs)
+		tail = slice(n // 2, None)
+		assert np.all(np.isfinite(got))
+		assert np.max(np.abs(got[tail, 1] + got[tail, 0])) < 1e-9, "channels differ"
+		err = np.max(np.abs(got[tail, 0] - want[tail])) / np.max(np.abs(want[tail]))
+		assert np.max(np.abs(want[tail])) > 0.05, f"model output is near silent at {knobs}"
+		worst = max(worst, err)
+	print(f"Shipped gen~ code matches the Python model to {worst:.1e} (relative)")
+	# The knob smoothers start a little off the settled values; 1e-4 allows
+	# for what is left of that after a quarter second.
+	assert worst < 1e-4
+
+
 def main():
+	check_codebox()
+
 	freqs = [50, 100, 200, 400, 800, 1000, 1500, 2000, 4000, 8000]
 	print("Small-signal response (10 mV), output 5, treble 5, dB:")
 	print("gain   " + " ".join(f"{f:>6}" for f in freqs))
