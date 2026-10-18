@@ -19,9 +19,10 @@ class RacksControllerMode(Mode):
 	a certain configuration. Specifically, the racks will use special
 	tokens in their Macro names to program the board.
 
-	The top row will activate 1 of the 5 racks, and the bottom row will
-	be based on the Macros of the currently active rack. Macros are
-	programmed as follows.
+	Pedals 6-9 activate 1 of the first 4 racks, and pedal 10 recalls the
+	next Macro Variation (preset) of the active rack, wrapping around to
+	the first after the last. The bottom row will be based on the Macros
+	of the currently active rack. Macros are programmed as follows.
 
 	Macro name must include a spec in the form:
 	#<event><action>
@@ -62,7 +63,7 @@ class RacksControllerMode(Mode):
 		self._racks = []
 		self._rack_ind = None
 		self._stomps = [RackMacroStomp(fs, leds, self._set_expression_param) for fs in bottom_row()]
-		self._patches = PatchSelector(top_row(), leds, scheduler, self._set_rack)
+		self._patches = PatchSelector(top_row()[:-1], leds, scheduler, self._set_rack)
 		# The macro currently assigned to each expression pedal
 		self._expression_params = {LEFT: None, RIGHT: None}
 		self._layout_changed_callback = lambda: None
@@ -71,6 +72,7 @@ class RacksControllerMode(Mode):
 		l = Layout()
 		for s in self._stomps: l.union_with(s.get_layout())
 		l.union_with(self._patches.get_layout())
+		l.listen(FootSwitch.TEN, EventType.PRESS, self._next_variation)
 		l.set_left_expression_callback(partial(self._expression_moved, LEFT))
 		l.set_right_expression_callback(partial(self._expression_moved, RIGHT))
 		return l
@@ -88,6 +90,20 @@ class RacksControllerMode(Mode):
 		if param.is_quantized:
 			value = round(value)
 		param.value = value
+
+	def _next_variation(self, *a):
+		"""Recalls the next Macro Variation of the active rack, wrapping around"""
+		if self._rack_ind is None:
+			return
+		rack = self._racks[self._rack_ind]
+		if not liveobj_valid(rack) or not hasattr(rack, "variation_count"):
+			return
+		count = rack.variation_count
+		if count == 0:
+			return
+		# selected_variation_index is -1 when no variation is selected
+		rack.selected_variation_index = (rack.selected_variation_index + 1) % count
+		rack.recall_selected_variation()
 
 	def _set_expression_param(self, side, param):
 		self._expression_params[side] = param
