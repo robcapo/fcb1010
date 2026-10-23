@@ -1,0 +1,152 @@
+// Kingtone: an Analogman King of Tone style dual overdrive for gen~.
+// Signal levels are treated as volts: 1.0 (0 dBFS) = 1 V peak.
+// Keep this file in step with reference.py, which mirrors it for testing.
+//
+// This is a template, expanded by build.py in two passes:
+//  1. Each block between SIDE markers is copied once per side, replacing
+//     $ with the side's letter (a feeds b, like the pedal's two sides in
+//     series).
+//  2. Everything between the CHANNEL markers, and every other line
+//     containing @, is copied once per channel, replacing @ with the
+//     channel number.
+// The code uses no user functions, so every filter's state is an explicit
+// History, and all declarations come before any statement.
+
+// SIDE BEGIN
+Param $_on(1, min=0, max=1);
+Param $_mode(1, min=0, max=2);
+Param $_drive(5, min=0, max=10);
+Param $_tone(5, min=0, max=10);
+Param $_volume(5, min=0, max=10);
+Param $_presence(5, min=0, max=10);
+History s_$on(0);
+History s_$drive(0.5);
+History s_$tone(-5.5);
+History s_$pres(4.5);
+History s_$vol(1);
+History s_$wb(0);
+History s_$wo(1);
+History s_$wd(0);
+History z_$in@(0);
+History z_$hp@(0);
+History z_$pre@(0);
+History z_$tone@(0);
+History z_$pres@(0);
+History z_$out@(0);
+History u_$od@(0);
+History u_$ds@(0);
+// SIDE END
+
+// 20 ms parameter smoothing.
+k = 1 - exp(-1 / (0.02 * samplerate));
+
+// One-pole TPT lowpass coefficients, G = g / (1 + g) with g = tan(pi fc / sr).
+// Each filter below is: v = (x - z) * G; y = v + z; z = y + v.
+// Input coupling cap (10 nF into 1 M): 16 Hz.
+g = tan(pi * 16 / samplerate);
+c_in = g / (1 + g);
+// Drive stage ground leg (4.7 k + 100 nF): gain only applies above 340 Hz.
+g = tan(pi * 340 / samplerate);
+c_hp = g / (1 + g);
+// Tone shelf and presence shelf corners.
+g = tan(pi * 1000 / samplerate);
+c_tone = g / (1 + g);
+g = tan(pi * 3200 / samplerate);
+c_pres = g / (1 + g);
+// Output coupling cap.
+g = tan(pi * 8 / samplerate);
+c_out = g / (1 + g);
+
+// SIDE BEGIN
+s_$on = s_$on + (($_on > 0.5) - s_$on) * k;
+s_$drive = s_$drive + ($_drive / 10 - s_$drive) * k;
+s_$tone = s_$tone + ((-14 + 1.7 * $_tone) - s_$tone) * k;
+s_$pres = s_$pres + (0.9 * $_presence - s_$pres) * k;
+// Volume: audio-taper pot, about unity at noon with Drive at 0.
+s_$vol = s_$vol + (6.5 * (pow(30, $_volume / 10) - 1) / 29 - s_$vol) * k;
+// Mode switch (0 Boost, 1 Overdrive, 2 Distortion), crossfaded.
+s_$wb = s_$wb + (($_mode < 0.5) - s_$wb) * k;
+s_$wo = s_$wo + (($_mode > 0.5) * ($_mode < 1.5) - s_$wo) * k;
+s_$wd = s_$wd + (($_mode > 1.5) - s_$wd) * k;
+
+// Drive pot (100 k audio taper) plus 1 k in the feedback leg, over 4.7 k
+// to ground: the stage gain above 340 Hz is 1 + rf / 4.7 k.
+rf_$ = 1000 + 100000 * (pow(30, s_$drive) - 1) / 29;
+gm1_$ = rf_$ / 4700;
+// The feedback cap (about 220 pF) across rf rolls the top end off as
+// Drive goes up: about 19 kHz at minimum, 5 kHz at maximum.
+g = tan(pi * 20000 / (1 + rf_$ / 36000) / samplerate);
+c_$pre = g / (1 + g);
+tone_amp_$ = dbtoa(s_$tone);
+pres_amp_$ = dbtoa(s_$pres);
+// SIDE END
+
+// CHANNEL BEGIN
+sig@ = in@;
+
+// SIDE BEGIN
+dry = sig@;
+
+// Input coupling cap.
+v = (dry - z_$in@) * c_in;
+lp = v + z_$in@;
+z_$in@ = lp + v;
+x = dry - lp;
+
+// Current through the feedback leg: the input above the ground-leg corner,
+// times rf / 4.7 k, then lowpassed by the feedback cap.
+v = (x - z_$hp@) * c_hp;
+lp = v + z_$hp@;
+z_$hp@ = lp + v;
+fb = gm1_$ * (x - lp);
+v = (fb - z_$pre@) * c_$pre;
+lp = v + z_$pre@;
+z_$pre@ = lp + v;
+fb = lp;
+
+// Overdrive: silicon diodes across the feedback leg. They cap the voltage
+// across the feedback leg at about 0.55 V, but the non-inverting stage
+// still adds the input on top (out = in + v_feedback), so the dry signal
+// always comes through. x / sqrt(1 + x^2) with first-order antiderivative
+// anti-aliasing: (F(u) - F(u1)) / (u - u1) = (u + u1) / (F(u) + F(u1)).
+u = fb / 0.55;
+od = x + 0.55 * (u + u_$od@) / (sqrt(1 + u * u) + sqrt(1 + u_$od@ * u_$od@));
+u_$od@ = u;
+
+// Distortion: the diodes move to ground after the stage, so the op-amp
+// runs at full gain and everything, dry signal included, is clipped at
+// about 0.5 V.
+u = (x + fb) / 0.5;
+ds = 0.5 * (u + u_$ds@) / (sqrt(1 + u * u) + sqrt(1 + u_$ds@ * u_$ds@));
+u_$ds@ = u;
+
+// Boost: no diodes; only the 9 V op-amp rails (about 3.8 V) limit it.
+u = (x + fb) / 3.8;
+bs = 3.8 * u / sqrt(1 + u * u);
+
+y = s_$wb * bs + s_$wo * od + s_$wd * ds;
+
+// Tone: treble shelf around 1 kHz, -14 dB fully down to +3 dB fully up.
+v = (y - z_$tone@) * c_tone;
+lp = v + z_$tone@;
+z_$tone@ = lp + v;
+y = lp + tone_amp_$ * (y - lp);
+
+// Presence (an internal trimmer on the pedal): 0 to +9 dB above 3.2 kHz.
+v = (y - z_$pres@) * c_pres;
+lp = v + z_$pres@;
+z_$pres@ = lp + v;
+y = (lp + pres_amp_$ * (y - lp)) * s_$vol;
+
+// Output coupling cap.
+v = (y - z_$out@) * c_out;
+lp = v + z_$out@;
+z_$out@ = lp + v;
+y = y - lp;
+
+// True bypass footswitch, crossfaded to avoid clicks.
+sig@ = dry + s_$on * (y - dry);
+// SIDE END
+
+out@ = sig@;
+// CHANNEL END
