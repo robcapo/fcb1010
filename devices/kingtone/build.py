@@ -147,6 +147,12 @@ def device_patcher(code):
 				"parameter_initial_enable": 1,
 				"parameter_unitstyle": 1,
 			})
+	# One bank per side, in the order Live and Push show them.
+	longnames = [v[0] for k, v in parameters.items()]
+	parameters["parameterbanks"] = {
+		str(i): {"index": i, "name": label, "parameters": ([n for n in longnames if n.startswith(label)] + ["-"] * 8)[:8]}
+		for i, label in enumerate(COLUMN_LABEL)
+	}
 	parameters["inherited_shortname"] = 1
 	return {
 		"patcher": {
@@ -164,6 +170,11 @@ def device_patcher(code):
 			"lines": lines,
 			"parameters": parameters,
 			"dependency_cache": [],
+			"latency": 0,
+			"is_mpe": 0,
+			"minimum_live_version": "",
+			"minimum_max_version": "",
+			"platform_compatibility": 0,
 			"autosave": 0,
 		}
 	}
@@ -176,9 +187,10 @@ def chunk(tag, payload):
 def amxd(patch_json):
 	# Live's device container: an "ampf" header naming the device kind
 	# ("aaaa" is an audio effect), a 4-byte meta chunk, then the patcher
-	# JSON in a "ptch" chunk.
-	body = patch_json.encode("utf-8") + b"\n\x00"
-	return chunk(b"ampf", b"aaaa") + chunk(b"meta", b"\x00\x00\x00\x00") + chunk(b"ptch", body)
+	# JSON in a "ptch" chunk. Devices saved by Max carry 1 in the meta
+	# chunk (7 when frozen), so this does too.
+	body = patch_json.encode("utf-8") + b"\x00"
+	return chunk(b"ampf", b"aaaa") + chunk(b"meta", struct.pack("<I", 1)) + chunk(b"ptch", body)
 
 
 def expand_sides(template, sides=SIDES):

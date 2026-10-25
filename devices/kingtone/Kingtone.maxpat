@@ -1431,9 +1431,44 @@
 				"Presence",
 				0
 			],
+			"parameterbanks": {
+				"0": {
+					"index": 0,
+					"name": "CH 1",
+					"parameters": [
+						"CH 1 On",
+						"CH 1 Mode",
+						"CH 1 Volume",
+						"CH 1 Drive",
+						"CH 1 Tone",
+						"CH 1 Presence",
+						"-",
+						"-"
+					]
+				},
+				"1": {
+					"index": 1,
+					"name": "CH 2",
+					"parameters": [
+						"CH 2 On",
+						"CH 2 Mode",
+						"CH 2 Volume",
+						"CH 2 Drive",
+						"CH 2 Tone",
+						"CH 2 Presence",
+						"-",
+						"-"
+					]
+				}
+			},
 			"inherited_shortname": 1
 		},
 		"dependency_cache": [],
+		"latency": 0,
+		"is_mpe": 0,
+		"minimum_live_version": "",
+		"minimum_max_version": "",
+		"platform_compatibility": 0,
 		"autosave": 0
 	}
 }
