@@ -306,7 +306,7 @@
 						16,
 						16
 					],
-					"varname": "CH 1 On",
+					"varname": "ch1_on",
 					"saved_attribute_attributes": {
 						"valueof": {
 							"parameter_longname": "CH 1 On",
@@ -368,7 +368,7 @@
 						140,
 						18
 					],
-					"varname": "CH 1 Mode",
+					"varname": "ch1_mode",
 					"saved_attribute_attributes": {
 						"valueof": {
 							"parameter_longname": "CH 1 Mode",
@@ -433,7 +433,7 @@
 						44,
 						48
 					],
-					"varname": "CH 1 Volume",
+					"varname": "ch1_volume",
 					"saved_attribute_attributes": {
 						"valueof": {
 							"parameter_longname": "CH 1 Volume",
@@ -492,7 +492,7 @@
 						44,
 						48
 					],
-					"varname": "CH 1 Drive",
+					"varname": "ch1_drive",
 					"saved_attribute_attributes": {
 						"valueof": {
 							"parameter_longname": "CH 1 Drive",
@@ -551,7 +551,7 @@
 						44,
 						48
 					],
-					"varname": "CH 1 Tone",
+					"varname": "ch1_tone",
 					"saved_attribute_attributes": {
 						"valueof": {
 							"parameter_longname": "CH 1 Tone",
@@ -610,7 +610,7 @@
 						44,
 						48
 					],
-					"varname": "CH 1 Presence",
+					"varname": "ch1_presence",
 					"saved_attribute_attributes": {
 						"valueof": {
 							"parameter_longname": "CH 1 Presence",
@@ -692,7 +692,7 @@
 						16,
 						16
 					],
-					"varname": "CH 2 On",
+					"varname": "ch2_on",
 					"saved_attribute_attributes": {
 						"valueof": {
 							"parameter_longname": "CH 2 On",
@@ -754,7 +754,7 @@
 						140,
 						18
 					],
-					"varname": "CH 2 Mode",
+					"varname": "ch2_mode",
 					"saved_attribute_attributes": {
 						"valueof": {
 							"parameter_longname": "CH 2 Mode",
@@ -819,7 +819,7 @@
 						44,
 						48
 					],
-					"varname": "CH 2 Volume",
+					"varname": "ch2_volume",
 					"saved_attribute_attributes": {
 						"valueof": {
 							"parameter_longname": "CH 2 Volume",
@@ -878,7 +878,7 @@
 						44,
 						48
 					],
-					"varname": "CH 2 Drive",
+					"varname": "ch2_drive",
 					"saved_attribute_attributes": {
 						"valueof": {
 							"parameter_longname": "CH 2 Drive",
@@ -937,7 +937,7 @@
 						44,
 						48
 					],
-					"varname": "CH 2 Tone",
+					"varname": "ch2_tone",
 					"saved_attribute_attributes": {
 						"valueof": {
 							"parameter_longname": "CH 2 Tone",
@@ -996,7 +996,7 @@
 						44,
 						48
 					],
-					"varname": "CH 2 Presence",
+					"varname": "ch2_presence",
 					"saved_attribute_attributes": {
 						"valueof": {
 							"parameter_longname": "CH 2 Presence",
@@ -1373,62 +1373,62 @@
 		"parameters": {
 			"obj-ctl-0": [
 				"CH 1 On",
-				"CH 1 On",
+				"On",
 				0
 			],
 			"obj-ctl-1": [
 				"CH 1 Mode",
-				"CH 1 Mode",
+				"Mode",
 				0
 			],
 			"obj-ctl-2": [
 				"CH 1 Volume",
-				"CH 1 Volume",
+				"Volume",
 				0
 			],
 			"obj-ctl-3": [
 				"CH 1 Drive",
-				"CH 1 Drive",
+				"Drive",
 				0
 			],
 			"obj-ctl-4": [
 				"CH 1 Tone",
-				"CH 1 Tone",
+				"Tone",
 				0
 			],
 			"obj-ctl-5": [
 				"CH 1 Presence",
-				"CH 1 Presence",
+				"Presence",
 				0
 			],
 			"obj-ctl-6": [
 				"CH 2 On",
-				"CH 2 On",
+				"On",
 				0
 			],
 			"obj-ctl-7": [
 				"CH 2 Mode",
-				"CH 2 Mode",
+				"Mode",
 				0
 			],
 			"obj-ctl-8": [
 				"CH 2 Volume",
-				"CH 2 Volume",
+				"Volume",
 				0
 			],
 			"obj-ctl-9": [
 				"CH 2 Drive",
-				"CH 2 Drive",
+				"Drive",
 				0
 			],
 			"obj-ctl-10": [
 				"CH 2 Tone",
-				"CH 2 Tone",
+				"Tone",
 				0
 			],
 			"obj-ctl-11": [
 				"CH 2 Presence",
-				"CH 2 Presence",
+				"Presence",
 				0
 			],
 			"inherited_shortname": 1

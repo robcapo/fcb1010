@@ -94,6 +94,9 @@ def device_patcher(code):
 
 	def control(maxclass, name, param, rect, size, numoutlets, outlettype, valueof, **attrs):
 		nonlocal n
+		# Live finds a parameter's object by its scripting name, so keep it
+		# to one plain word: "ch1_drive", not the "CH 1 Drive" long name.
+		varname = name.lower().replace("ch ", "ch").replace(" ", "_")
 		obj = f"obj-ctl-{n}"
 		prepend = f"obj-prepend-{n}"
 		x = 160 + (n % 6) * 110
@@ -101,12 +104,12 @@ def device_patcher(code):
 		n += 1
 		boxes.append(box(obj, maxclass, [x, y] + size, 1, numoutlets, outlettype,
 			parameter_enable=1, presentation=1, presentation_rect=rect + size,
-			varname=name, saved_attribute_attributes={"valueof": valueof}, **attrs))
+			varname=varname, saved_attribute_attributes={"valueof": valueof}, **attrs))
 		boxes.append(box(prepend, "newobj", [x, y + 70, 100, 22], 1, 1, [""],
 			text=f"prepend {param}"))
 		lines.append(line(obj, 0, prepend, 0))
 		lines.append(line(prepend, 0, "obj-gen", 0))
-		parameters[obj] = [name, name, 0]
+		parameters[obj] = [name, valueof["parameter_shortname"], 0]
 
 	for i, side in enumerate(SIDES):
 		cx = COLUMN_X[i]
