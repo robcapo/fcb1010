@@ -300,13 +300,6 @@
 						"float"
 					],
 					"parameter_enable": 1,
-					"presentation": 1,
-					"presentation_rect": [
-						112,
-						3,
-						36,
-						15
-					],
 					"varname": "ch1_on",
 					"saved_attribute_attributes": {
 						"valueof": {
@@ -382,6 +375,18 @@
 						4,
 						16,
 						16
+					],
+					"activebgoncolor": [
+						1.0,
+						0.709,
+						0.196,
+						1.0
+					],
+					"bgoncolor": [
+						1.0,
+						0.709,
+						0.196,
+						1.0
 					]
 				}
 			},
@@ -764,13 +769,6 @@
 						"float"
 					],
 					"parameter_enable": 1,
-					"presentation": 1,
-					"presentation_rect": [
-						268,
-						3,
-						36,
-						15
-					],
 					"varname": "ch2_on",
 					"saved_attribute_attributes": {
 						"valueof": {
@@ -846,6 +844,18 @@
 						4,
 						16,
 						16
+					],
+					"activebgoncolor": [
+						1.0,
+						0.709,
+						0.196,
+						1.0
+					],
+					"bgoncolor": [
+						1.0,
+						0.709,
+						0.196,
+						1.0
 					]
 				}
 			},

@@ -28,6 +28,7 @@ DIALS = [
 	("Presence", "presence", 0, 100),
 ]
 MODES = ["Boost", "OD", "Dist"]
+LIVE_YELLOW = [1.0, 0.709, 0.196, 1.0]
 
 
 def box(id, maxclass, rect, numinlets, numoutlets, outlettype=None, **attrs):
@@ -103,7 +104,7 @@ def device_patcher(code):
 		y = 60 + (n // 6) * 120
 		n += 1
 		boxes.append(box(obj, maxclass, [x, y] + size, 1, numoutlets, outlettype,
-			parameter_enable=1, presentation=1, presentation_rect=rect + size,
+			parameter_enable=1, **({} if rect is None else {"presentation": 1, "presentation_rect": rect + size}),
 			varname=varname, saved_attribute_attributes={"valueof": valueof}, **attrs))
 		boxes.append(box(prepend, "newobj", [x, y + 70, 100, 22], 1, 1, [""],
 			text=f"prepend {param}"))
@@ -125,9 +126,10 @@ def device_patcher(code):
 			text=label, presentation=1, presentation_rect=[cx + 20, 2, 50, 18],
 			fontsize=11, fontface=1))
 		# The footswitch is a 0-127 parameter, so a rack macro can map onto it
-		# with a usable Min/Max: 64 and up is on. The toggle beside it is only
-		# the button you click; it sends 0 or 127 and shows the state.
-		on = control("live.numbox", f"{label} On", f"{side}_on", [cx + 104, 3], [36, 15], 2, ["", "float"], {
+		# with a usable Min/Max: 64 and up is on. It has no place on the
+		# panel; the toggle is the button you click, which sends 0 or 127 and
+		# shows the state.
+		on = control("live.numbox", f"{label} On", f"{side}_on", None, [36, 15], 2, ["", "float"], {
 			"parameter_longname": f"{label} On",
 			"parameter_shortname": "On",
 			"parameter_type": 1,
@@ -140,7 +142,10 @@ def device_patcher(code):
 		via = "obj-via-" + on.split("-")[-1]
 		button = f"obj-onbutton-{i}"
 		boxes.append(box(button, "live.toggle", [40 + i * 60, 400, 16, 16], 1, 1, [""],
-			parameter_enable=0, presentation=1, presentation_rect=[cx, 4, 16, 16]))
+			parameter_enable=0, presentation=1, presentation_rect=[cx, 4, 16, 16],
+			# Live's yellow, set outright: a toggle that isn't a Live
+			# parameter doesn't pick up the theme's "on" colour.
+			activebgoncolor=LIVE_YELLOW, bgoncolor=LIVE_YELLOW))
 		boxes.append(box(f"obj-onscale-{i}", "newobj", [40 + i * 60, 430, 40, 22], 2, 1, ["int"], text="* 127"))
 		boxes.append(box(f"obj-onset-{i}", "newobj", [40 + i * 60, 370, 70, 22], 1, 1, [""], text="prepend set"))
 		lines.append(line(button, 0, f"obj-onscale-{i}", 0))
