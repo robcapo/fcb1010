@@ -28,7 +28,6 @@ DIALS = [
 	("Presence", "presence", 0, 100),
 ]
 MODES = ["Boost", "OD", "Dist"]
-LIVE_YELLOW = [1.0, 0.709, 0.196, 1.0]
 
 
 def box(id, maxclass, rect, numinlets, numoutlets, outlettype=None, **attrs):
@@ -142,10 +141,7 @@ def device_patcher(code):
 		via = "obj-via-" + on.split("-")[-1]
 		button = f"obj-onbutton-{i}"
 		boxes.append(box(button, "live.toggle", [40 + i * 60, 400, 16, 16], 1, 1, [""],
-			parameter_enable=0, presentation=1, presentation_rect=[cx, 4, 16, 16],
-			# Live's yellow, set outright: a toggle that isn't a Live
-			# parameter doesn't pick up the theme's "on" colour.
-			activebgoncolor=LIVE_YELLOW, bgoncolor=LIVE_YELLOW))
+			parameter_enable=0, presentation=1, presentation_rect=[cx, 4, 16, 16]))
 		boxes.append(box(f"obj-onscale-{i}", "newobj", [40 + i * 60, 430, 40, 22], 2, 1, ["int"], text="* 127"))
 		boxes.append(box(f"obj-onset-{i}", "newobj", [40 + i * 60, 370, 70, 22], 1, 1, [""], text="prepend set"))
 		lines.append(line(button, 0, f"obj-onscale-{i}", 0))
