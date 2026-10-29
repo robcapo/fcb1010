@@ -92,7 +92,7 @@ def device_patcher(code):
 	parameters = {}
 	n = 0
 
-	def control(maxclass, name, param, rect, size, numoutlets, outlettype, valueof, via=None, **attrs):
+	def control(maxclass, name, param, rect, size, numoutlets, outlettype, valueof, wire=True, **attrs):
 		nonlocal n
 		# Live finds a parameter's object by its scripting name, so keep it
 		# to one plain word: "ch1_drive", not the "CH 1 Drive" long name.
@@ -107,16 +107,11 @@ def device_patcher(code):
 			varname=varname, saved_attribute_attributes={"valueof": valueof}, **attrs))
 		boxes.append(box(prepend, "newobj", [x, y + 70, 100, 22], 1, 1, [""],
 			text=f"prepend {param}"))
-		if via is None:
+		if wire:
 			lines.append(line(obj, 0, prepend, 0))
-		else:
-			# An object between the control and gen~, such as ">= 64".
-			boxes.append(box(f"obj-via-{n - 1}", "newobj", [x, y + 35, 60, 22], 2, 1, ["int"], text=via))
-			lines.append(line(obj, 0, f"obj-via-{n - 1}", 0))
-			lines.append(line(f"obj-via-{n - 1}", 0, prepend, 0))
 		lines.append(line(prepend, 0, "obj-gen", 0))
 		parameters[obj] = [name, valueof["parameter_shortname"], 0]
-		return obj
+		return obj, prepend, x, y
 
 	for i, side in enumerate(SIDES):
 		cx = COLUMN_X[i]
@@ -124,9 +119,11 @@ def device_patcher(code):
 		boxes.append(box(f"obj-label-{i}", "comment", [300 + i * 60, 20, 50, 20], 1, 0,
 			text=label, presentation=1, presentation_rect=[cx + 20, 2, 50, 18],
 			fontsize=11, fontface=1))
-		# Range 0 127 rather than off/on, so a rack macro maps onto it with
-		# a full 0-127 Min/Max. The gen~ code turns the side on at 64 and up.
-		control("live.toggle", f"{label} On", f"{side}_on", [cx, 4], [16, 16], 1, [""], {
+		# A live.text toggle with an integer 0-127 value, so a rack macro
+		# maps onto it over the full range. The patch turns that into the
+		# 0/1 gen~ expects: scaled to 0-1, then split at the midpoint, so
+		# 0-63 is off and 64-127 is on.
+		on, prepend, x, y = control("live.text", f"{label} On", f"{side}_on", [cx, 4], [16, 16], 2, ["", ""], {
 			"parameter_longname": f"{label} On",
 			"parameter_shortname": "On",
 			"parameter_type": 1,
@@ -134,7 +131,17 @@ def device_patcher(code):
 			"parameter_mmax": 127,
 			"parameter_initial": [127 if i == 0 else 0],
 			"parameter_initial_enable": 1,
-		})
+		}, wire=False, mode=1, text="", texton="")
+		scale, split = f"obj-onscale-{i}", f"obj-onsplit-{i}"
+		boxes.append(box(scale, "newobj", [x, y + 25, 110, 22], 6, 1, [""], text="scale 0 127 0. 1."))
+		boxes.append(box(split, "newobj", [x, y + 50, 80, 22], 3, 2, ["", ""], text="split 0. 0.5"))
+		lines.append(line(on, 0, scale, 0))
+		lines.append(line(scale, 0, split, 0))
+		for k, value in enumerate(("0", "1")):
+			msg = f"obj-onmsg-{i}-{value}"
+			boxes.append(box(msg, "message", [x + 110 + k * 40, y + 50, 30, 22], 2, 1, [""], text=value))
+			lines.append(line(split, k, msg, 0))
+			lines.append(line(msg, 0, prepend, 0))
 		control("live.tab", f"{label} Mode", f"{side}_mode", [cx, 22], [140, 18], 3, ["", "", "float"], {
 			"parameter_longname": f"{label} Mode",
 			"parameter_shortname": "Mode",
