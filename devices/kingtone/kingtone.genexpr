@@ -13,7 +13,7 @@
 // History, and all declarations come before any statement.
 
 // SIDE BEGIN
-Param $_on(1, min=0, max=1);
+Param $_on(127, min=0, max=127);
 Param $_mode(1, min=0, max=2);
 Param $_drive(5, min=0, max=10);
 Param $_tone(5, min=0, max=10);
@@ -58,7 +58,8 @@ g = tan(pi * 8 / samplerate);
 c_out = g / (1 + g);
 
 // SIDE BEGIN
-s_$on = s_$on + (($_on > 0.5) - s_$on) * k;
+// The On toggle runs 0-127; 64 and up is on.
+s_$on = s_$on + (($_on > 63.5) - s_$on) * k;
 s_$drive = s_$drive + ($_drive / 10 - s_$drive) * k;
 s_$tone = s_$tone + ((-14 + 1.7 * $_tone) - s_$tone) * k;
 s_$pres = s_$pres + (0.9 * $_presence - s_$pres) * k;

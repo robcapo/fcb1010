@@ -124,11 +124,9 @@ def device_patcher(code):
 		boxes.append(box(f"obj-label-{i}", "comment", [300 + i * 60, 20, 50, 20], 1, 0,
 			text=label, presentation=1, presentation_rect=[cx + 20, 2, 50, 18],
 			fontsize=11, fontface=1))
-		# The footswitch is a 0-127 parameter, so a rack macro can map onto it
-		# with a usable Min/Max: 64 and up is on. It has no place on the
-		# panel; the toggle is the button you click, which sends 0 or 127 and
-		# shows the state.
-		on = control("live.numbox", f"{label} On", f"{side}_on", None, [36, 15], 2, ["", "float"], {
+		# Range 0 127 rather than off/on, so a rack macro maps onto it with
+		# a full 0-127 Min/Max. The gen~ code turns the side on at 64 and up.
+		control("live.toggle", f"{label} On", f"{side}_on", [cx, 4], [16, 16], 1, [""], {
 			"parameter_longname": f"{label} On",
 			"parameter_shortname": "On",
 			"parameter_type": 1,
@@ -136,18 +134,7 @@ def device_patcher(code):
 			"parameter_mmax": 127,
 			"parameter_initial": [127 if i == 0 else 0],
 			"parameter_initial_enable": 1,
-			"parameter_modmode": 0,
-		}, via=">= 64")
-		via = "obj-via-" + on.split("-")[-1]
-		button = f"obj-onbutton-{i}"
-		boxes.append(box(button, "live.toggle", [40 + i * 60, 400, 16, 16], 1, 1, [""],
-			parameter_enable=0, presentation=1, presentation_rect=[cx, 4, 16, 16]))
-		boxes.append(box(f"obj-onscale-{i}", "newobj", [40 + i * 60, 430, 40, 22], 2, 1, ["int"], text="* 127"))
-		boxes.append(box(f"obj-onset-{i}", "newobj", [40 + i * 60, 370, 70, 22], 1, 1, [""], text="prepend set"))
-		lines.append(line(button, 0, f"obj-onscale-{i}", 0))
-		lines.append(line(f"obj-onscale-{i}", 0, on, 0))
-		lines.append(line(via, 0, f"obj-onset-{i}", 0))
-		lines.append(line(f"obj-onset-{i}", 0, button, 0))
+		})
 		control("live.tab", f"{label} Mode", f"{side}_mode", [cx, 22], [140, 18], 3, ["", "", "float"], {
 			"parameter_longname": f"{label} Mode",
 			"parameter_shortname": "Mode",

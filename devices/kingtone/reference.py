@@ -149,7 +149,7 @@ class GenCodebox:
 def gen_params(a, b):
 	params = {}
 	for side, knobs in (("a", a), ("b", b)):
-		params[f"{side}_on"] = 0 if knobs is None else 1
+		params[f"{side}_on"] = 0 if knobs is None else 127
 		for name, value in (knobs or {}).items():
 			params[f"{side}_{name}"] = MODES[value] if name == "mode" else value
 	return params
