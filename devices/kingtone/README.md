@@ -8,7 +8,7 @@ Like the pedal, it has two sides in series: CH 1 feeds CH 2. Each side has:
 
 | Control  | What it does |
 |----------|--------------|
-| On       | The side's footswitch: a 0 to 127 parameter, on at 64 and up. Clicking the button sends 0 or 127. Map a rack macro to it over the full 0 to 127 range. True bypass, with a short crossfade so it doesn't click. |
+| On       | The side's footswitch. A rack macro mapped to it turns it on at 64 and up. True bypass, with a short crossfade so it doesn't click. |
 | Mode     | The pedal's internal DIP switch: **Boost** (no diodes), **OD** (diodes in the op-amp feedback loop, the stock setting) or **Dist** (diodes to ground). |
 | Volume   | Audio-taper output level. Noon is about unity with Drive at 0; full up is about +16 dB. |
 | Drive    | The 100 k audio-taper gain pot in the op-amp feedback: +1.7 dB to +25 dB in the mids. |
