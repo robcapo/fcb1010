@@ -286,41 +286,40 @@
 			{
 				"box": {
 					"id": "obj-ctl-0",
-					"maxclass": "live.toggle",
+					"maxclass": "live.numbox",
 					"numinlets": 1,
-					"numoutlets": 1,
+					"numoutlets": 2,
 					"patching_rect": [
 						160,
 						60,
-						16,
-						16
+						36,
+						15
 					],
 					"outlettype": [
-						""
+						"",
+						"float"
 					],
 					"parameter_enable": 1,
 					"presentation": 1,
 					"presentation_rect": [
-						8,
-						4,
-						16,
-						16
+						112,
+						3,
+						36,
+						15
 					],
 					"varname": "ch1_on",
 					"saved_attribute_attributes": {
 						"valueof": {
 							"parameter_longname": "CH 1 On",
 							"parameter_shortname": "On",
-							"parameter_type": 2,
-							"parameter_enum": [
-								"off",
-								"on"
-							],
-							"parameter_mmax": 1,
+							"parameter_type": 1,
+							"parameter_mmin": 0,
+							"parameter_mmax": 127,
 							"parameter_initial": [
-								1
+								127
 							],
-							"parameter_initial_enable": 1
+							"parameter_initial_enable": 1,
+							"parameter_modmode": 0
 						}
 					}
 				}
@@ -341,6 +340,85 @@
 						""
 					],
 					"text": "prepend a_on"
+				}
+			},
+			{
+				"box": {
+					"id": "obj-via-0",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						160,
+						95,
+						60,
+						22
+					],
+					"outlettype": [
+						"int"
+					],
+					"text": ">= 64"
+				}
+			},
+			{
+				"box": {
+					"id": "obj-onbutton-0",
+					"maxclass": "live.toggle",
+					"numinlets": 1,
+					"numoutlets": 1,
+					"patching_rect": [
+						40,
+						400,
+						16,
+						16
+					],
+					"outlettype": [
+						""
+					],
+					"parameter_enable": 0,
+					"presentation": 1,
+					"presentation_rect": [
+						8,
+						4,
+						16,
+						16
+					]
+				}
+			},
+			{
+				"box": {
+					"id": "obj-onscale-0",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						40,
+						430,
+						40,
+						22
+					],
+					"outlettype": [
+						"int"
+					],
+					"text": "* 127"
+				}
+			},
+			{
+				"box": {
+					"id": "obj-onset-0",
+					"maxclass": "newobj",
+					"numinlets": 1,
+					"numoutlets": 1,
+					"patching_rect": [
+						40,
+						370,
+						70,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "prepend set"
 				}
 			},
 			{
@@ -672,41 +750,40 @@
 			{
 				"box": {
 					"id": "obj-ctl-6",
-					"maxclass": "live.toggle",
+					"maxclass": "live.numbox",
 					"numinlets": 1,
-					"numoutlets": 1,
+					"numoutlets": 2,
 					"patching_rect": [
 						160,
 						180,
-						16,
-						16
+						36,
+						15
 					],
 					"outlettype": [
-						""
+						"",
+						"float"
 					],
 					"parameter_enable": 1,
 					"presentation": 1,
 					"presentation_rect": [
-						164,
-						4,
-						16,
-						16
+						268,
+						3,
+						36,
+						15
 					],
 					"varname": "ch2_on",
 					"saved_attribute_attributes": {
 						"valueof": {
 							"parameter_longname": "CH 2 On",
 							"parameter_shortname": "On",
-							"parameter_type": 2,
-							"parameter_enum": [
-								"off",
-								"on"
-							],
-							"parameter_mmax": 1,
+							"parameter_type": 1,
+							"parameter_mmin": 0,
+							"parameter_mmax": 127,
 							"parameter_initial": [
 								0
 							],
-							"parameter_initial_enable": 1
+							"parameter_initial_enable": 1,
+							"parameter_modmode": 0
 						}
 					}
 				}
@@ -727,6 +804,85 @@
 						""
 					],
 					"text": "prepend b_on"
+				}
+			},
+			{
+				"box": {
+					"id": "obj-via-6",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						160,
+						215,
+						60,
+						22
+					],
+					"outlettype": [
+						"int"
+					],
+					"text": ">= 64"
+				}
+			},
+			{
+				"box": {
+					"id": "obj-onbutton-1",
+					"maxclass": "live.toggle",
+					"numinlets": 1,
+					"numoutlets": 1,
+					"patching_rect": [
+						100,
+						400,
+						16,
+						16
+					],
+					"outlettype": [
+						""
+					],
+					"parameter_enable": 0,
+					"presentation": 1,
+					"presentation_rect": [
+						164,
+						4,
+						16,
+						16
+					]
+				}
+			},
+			{
+				"box": {
+					"id": "obj-onscale-1",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						100,
+						430,
+						40,
+						22
+					],
+					"outlettype": [
+						"int"
+					],
+					"text": "* 127"
+				}
+			},
+			{
+				"box": {
+					"id": "obj-onset-1",
+					"maxclass": "newobj",
+					"numinlets": 1,
+					"numoutlets": 1,
+					"patching_rect": [
+						100,
+						370,
+						70,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "prepend set"
 				}
 			},
 			{
@@ -1088,6 +1244,18 @@
 						0
 					],
 					"destination": [
+						"obj-via-0",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"obj-via-0",
+						0
+					],
+					"destination": [
 						"obj-prepend-0",
 						0
 					]
@@ -1101,6 +1269,54 @@
 					],
 					"destination": [
 						"obj-gen",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"obj-onbutton-0",
+						0
+					],
+					"destination": [
+						"obj-onscale-0",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"obj-onscale-0",
+						0
+					],
+					"destination": [
+						"obj-ctl-0",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"obj-via-0",
+						0
+					],
+					"destination": [
+						"obj-onset-0",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"obj-onset-0",
+						0
+					],
+					"destination": [
+						"obj-onbutton-0",
 						0
 					]
 				}
@@ -1232,6 +1448,18 @@
 						0
 					],
 					"destination": [
+						"obj-via-6",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"obj-via-6",
+						0
+					],
+					"destination": [
 						"obj-prepend-6",
 						0
 					]
@@ -1245,6 +1473,54 @@
 					],
 					"destination": [
 						"obj-gen",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"obj-onbutton-1",
+						0
+					],
+					"destination": [
+						"obj-onscale-1",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"obj-onscale-1",
+						0
+					],
+					"destination": [
+						"obj-ctl-6",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"obj-via-6",
+						0
+					],
+					"destination": [
+						"obj-onset-1",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"obj-onset-1",
+						0
+					],
+					"destination": [
+						"obj-onbutton-1",
 						0
 					]
 				}

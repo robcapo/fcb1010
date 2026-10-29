@@ -92,7 +92,7 @@ def device_patcher(code):
 	parameters = {}
 	n = 0
 
-	def control(maxclass, name, param, rect, size, numoutlets, outlettype, valueof, **attrs):
+	def control(maxclass, name, param, rect, size, numoutlets, outlettype, valueof, via=None, **attrs):
 		nonlocal n
 		# Live finds a parameter's object by its scripting name, so keep it
 		# to one plain word: "ch1_drive", not the "CH 1 Drive" long name.
@@ -107,9 +107,16 @@ def device_patcher(code):
 			varname=varname, saved_attribute_attributes={"valueof": valueof}, **attrs))
 		boxes.append(box(prepend, "newobj", [x, y + 70, 100, 22], 1, 1, [""],
 			text=f"prepend {param}"))
-		lines.append(line(obj, 0, prepend, 0))
+		if via is None:
+			lines.append(line(obj, 0, prepend, 0))
+		else:
+			# An object between the control and gen~, such as ">= 64".
+			boxes.append(box(f"obj-via-{n - 1}", "newobj", [x, y + 35, 60, 22], 2, 1, ["int"], text=via))
+			lines.append(line(obj, 0, f"obj-via-{n - 1}", 0))
+			lines.append(line(f"obj-via-{n - 1}", 0, prepend, 0))
 		lines.append(line(prepend, 0, "obj-gen", 0))
 		parameters[obj] = [name, valueof["parameter_shortname"], 0]
+		return obj
 
 	for i, side in enumerate(SIDES):
 		cx = COLUMN_X[i]
@@ -117,15 +124,29 @@ def device_patcher(code):
 		boxes.append(box(f"obj-label-{i}", "comment", [300 + i * 60, 20, 50, 20], 1, 0,
 			text=label, presentation=1, presentation_rect=[cx + 20, 2, 50, 18],
 			fontsize=11, fontface=1))
-		control("live.toggle", f"{label} On", f"{side}_on", [cx, 4], [16, 16], 1, [""], {
+		# The footswitch is a 0-127 parameter, so a rack macro can map onto it
+		# with a usable Min/Max: 64 and up is on. The toggle beside it is only
+		# the button you click; it sends 0 or 127 and shows the state.
+		on = control("live.numbox", f"{label} On", f"{side}_on", [cx + 104, 3], [36, 15], 2, ["", "float"], {
 			"parameter_longname": f"{label} On",
 			"parameter_shortname": "On",
-			"parameter_type": 2,
-			"parameter_enum": ["off", "on"],
-			"parameter_mmax": 1,
-			"parameter_initial": [1 if i == 0 else 0],
+			"parameter_type": 1,
+			"parameter_mmin": 0,
+			"parameter_mmax": 127,
+			"parameter_initial": [127 if i == 0 else 0],
 			"parameter_initial_enable": 1,
-		})
+			"parameter_modmode": 0,
+		}, via=">= 64")
+		via = "obj-via-" + on.split("-")[-1]
+		button = f"obj-onbutton-{i}"
+		boxes.append(box(button, "live.toggle", [40 + i * 60, 400, 16, 16], 1, 1, [""],
+			parameter_enable=0, presentation=1, presentation_rect=[cx, 4, 16, 16]))
+		boxes.append(box(f"obj-onscale-{i}", "newobj", [40 + i * 60, 430, 40, 22], 2, 1, ["int"], text="* 127"))
+		boxes.append(box(f"obj-onset-{i}", "newobj", [40 + i * 60, 370, 70, 22], 1, 1, [""], text="prepend set"))
+		lines.append(line(button, 0, f"obj-onscale-{i}", 0))
+		lines.append(line(f"obj-onscale-{i}", 0, on, 0))
+		lines.append(line(via, 0, f"obj-onset-{i}", 0))
+		lines.append(line(f"obj-onset-{i}", 0, button, 0))
 		control("live.tab", f"{label} Mode", f"{side}_mode", [cx, 22], [140, 18], 3, ["", "", "float"], {
 			"parameter_longname": f"{label} Mode",
 			"parameter_shortname": "Mode",
