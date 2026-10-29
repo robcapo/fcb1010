@@ -119,11 +119,14 @@ def device_patcher(code):
 		boxes.append(box(f"obj-label-{i}", "comment", [300 + i * 60, 20, 50, 20], 1, 0,
 			text=label, presentation=1, presentation_rect=[cx + 20, 2, 50, 18],
 			fontsize=11, fontface=1))
-		# A live.text toggle with an integer 0-127 value, so a rack macro
-		# maps onto it over the full range. The patch turns that into the
-		# 0/1 gen~ expects: scaled to 0-1, then split at the midpoint, so
-		# 0-63 is off and 64-127 is on.
-		on, prepend, x, y = control("live.text", f"{label} On", f"{side}_on", [cx, 4], [16, 16], 2, ["", ""], {
+		# The On parameter is a live.text toggle with an integer 0-127 value,
+		# so a rack macro maps onto it over the full range. The patch scales
+		# it to 0-1 and splits at the midpoint into the 0/1 gen~ expects:
+		# 0-63 is off, 64-127 is on. A live.text lights for any value above
+		# 0, so the parameter stays off the panel; the button you see is a
+		# second live.text that isn't a parameter. It shows the 0/1 result,
+		# and clicking it sets the parameter to 0 or 127.
+		on, prepend, x, y = control("live.text", f"{label} On", f"{side}_on", None, [16, 16], 2, ["", ""], {
 			"parameter_longname": f"{label} On",
 			"parameter_shortname": "On",
 			"parameter_type": 1,
@@ -133,8 +136,14 @@ def device_patcher(code):
 			"parameter_initial_enable": 1,
 		}, wire=False, mode=1, text="", texton="")
 		scale, split = f"obj-onscale-{i}", f"obj-onsplit-{i}"
+		button, setter, times = f"obj-onbutton-{i}", f"obj-onset-{i}", f"obj-ontimes-{i}"
 		boxes.append(box(scale, "newobj", [x, y + 25, 110, 22], 6, 1, [""], text="scale 0 127 0. 1."))
 		boxes.append(box(split, "newobj", [x, y + 50, 80, 22], 3, 2, ["", ""], text="split 0. 0.5"))
+		boxes.append(box(button, "live.text", [40 + i * 60, 400, 16, 16], 1, 2, ["", ""],
+			parameter_enable=0, mode=1, text="", texton="",
+			presentation=1, presentation_rect=[cx, 4, 16, 16]))
+		boxes.append(box(setter, "newobj", [40 + i * 60, 370, 70, 22], 1, 1, [""], text="prepend set"))
+		boxes.append(box(times, "newobj", [40 + i * 60, 430, 40, 22], 2, 1, ["int"], text="* 127"))
 		lines.append(line(on, 0, scale, 0))
 		lines.append(line(scale, 0, split, 0))
 		for k, value in enumerate(("0", "1")):
@@ -142,6 +151,10 @@ def device_patcher(code):
 			boxes.append(box(msg, "message", [x + 110 + k * 40, y + 50, 30, 22], 2, 1, [""], text=value))
 			lines.append(line(split, k, msg, 0))
 			lines.append(line(msg, 0, prepend, 0))
+			lines.append(line(msg, 0, setter, 0))
+		lines.append(line(setter, 0, button, 0))
+		lines.append(line(button, 0, times, 0))
+		lines.append(line(times, 0, on, 0))
 		control("live.tab", f"{label} Mode", f"{side}_mode", [cx, 22], [140, 18], 3, ["", "", "float"], {
 			"parameter_longname": f"{label} Mode",
 			"parameter_shortname": "Mode",

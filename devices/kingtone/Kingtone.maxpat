@@ -300,13 +300,6 @@
 						""
 					],
 					"parameter_enable": 1,
-					"presentation": 1,
-					"presentation_rect": [
-						8,
-						4,
-						16,
-						16
-					],
 					"varname": "ch1_on",
 					"saved_attribute_attributes": {
 						"valueof": {
@@ -379,6 +372,71 @@
 						""
 					],
 					"text": "split 0. 0.5"
+				}
+			},
+			{
+				"box": {
+					"id": "obj-onbutton-0",
+					"maxclass": "live.text",
+					"numinlets": 1,
+					"numoutlets": 2,
+					"patching_rect": [
+						40,
+						400,
+						16,
+						16
+					],
+					"outlettype": [
+						"",
+						""
+					],
+					"parameter_enable": 0,
+					"mode": 1,
+					"text": "",
+					"texton": "",
+					"presentation": 1,
+					"presentation_rect": [
+						8,
+						4,
+						16,
+						16
+					]
+				}
+			},
+			{
+				"box": {
+					"id": "obj-onset-0",
+					"maxclass": "newobj",
+					"numinlets": 1,
+					"numoutlets": 1,
+					"patching_rect": [
+						40,
+						370,
+						70,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "prepend set"
+				}
+			},
+			{
+				"box": {
+					"id": "obj-ontimes-0",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						40,
+						430,
+						40,
+						22
+					],
+					"outlettype": [
+						"int"
+					],
+					"text": "* 127"
 				}
 			},
 			{
@@ -760,13 +818,6 @@
 						""
 					],
 					"parameter_enable": 1,
-					"presentation": 1,
-					"presentation_rect": [
-						164,
-						4,
-						16,
-						16
-					],
 					"varname": "ch2_on",
 					"saved_attribute_attributes": {
 						"valueof": {
@@ -839,6 +890,71 @@
 						""
 					],
 					"text": "split 0. 0.5"
+				}
+			},
+			{
+				"box": {
+					"id": "obj-onbutton-1",
+					"maxclass": "live.text",
+					"numinlets": 1,
+					"numoutlets": 2,
+					"patching_rect": [
+						100,
+						400,
+						16,
+						16
+					],
+					"outlettype": [
+						"",
+						""
+					],
+					"parameter_enable": 0,
+					"mode": 1,
+					"text": "",
+					"texton": "",
+					"presentation": 1,
+					"presentation_rect": [
+						164,
+						4,
+						16,
+						16
+					]
+				}
+			},
+			{
+				"box": {
+					"id": "obj-onset-1",
+					"maxclass": "newobj",
+					"numinlets": 1,
+					"numoutlets": 1,
+					"patching_rect": [
+						100,
+						370,
+						70,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "prepend set"
+				}
+			},
+			{
+				"box": {
+					"id": "obj-ontimes-1",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						100,
+						430,
+						40,
+						22
+					],
+					"outlettype": [
+						"int"
+					],
+					"text": "* 127"
 				}
 			},
 			{
@@ -1292,6 +1408,18 @@
 			{
 				"patchline": {
 					"source": [
+						"obj-onmsg-0-0",
+						0
+					],
+					"destination": [
+						"obj-onset-0",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
 						"obj-onsplit-0",
 						1
 					],
@@ -1309,6 +1437,54 @@
 					],
 					"destination": [
 						"obj-prepend-0",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"obj-onmsg-0-1",
+						0
+					],
+					"destination": [
+						"obj-onset-0",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"obj-onset-0",
+						0
+					],
+					"destination": [
+						"obj-onbutton-0",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"obj-onbutton-0",
+						0
+					],
+					"destination": [
+						"obj-ontimes-0",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"obj-ontimes-0",
+						0
+					],
+					"destination": [
+						"obj-ctl-0",
 						0
 					]
 				}
@@ -1496,6 +1672,18 @@
 			{
 				"patchline": {
 					"source": [
+						"obj-onmsg-1-0",
+						0
+					],
+					"destination": [
+						"obj-onset-1",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
 						"obj-onsplit-1",
 						1
 					],
@@ -1513,6 +1701,54 @@
 					],
 					"destination": [
 						"obj-prepend-6",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"obj-onmsg-1-1",
+						0
+					],
+					"destination": [
+						"obj-onset-1",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"obj-onset-1",
+						0
+					],
+					"destination": [
+						"obj-onbutton-1",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"obj-onbutton-1",
+						0
+					],
+					"destination": [
+						"obj-ontimes-1",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"obj-ontimes-1",
+						0
+					],
+					"destination": [
+						"obj-ctl-6",
 						0
 					]
 				}
