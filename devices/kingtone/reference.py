@@ -183,6 +183,14 @@ def check_codebox(sr=48000):
 		err = np.max(np.abs(got[tail, 0] - want[tail])) / np.max(np.abs(want[tail]))
 		worst = max(worst, err)
 	print(f"Shipped gen~ code matches the Python model to {worst:.1e} (relative)")
+
+	# The On toggles run 0-127 and switch a side on at 64 and up.
+	for value, on in ((63, False), (64, True)):
+		box = GenCodebox(code, sr, a_on=value, b_on=0, a_drive=10)
+		got = np.array([box(float(s), float(s))[0] for s in x])
+		changed = np.max(np.abs(got[n // 2:] - x[n // 2:])) > 0.01
+		assert changed == on, f"On at {value} should be {'on' if on else 'off'}"
+	print("On switches at 64")
 	# The knob smoothers start a little off the settled values; 1e-4 allows
 	# for what is left of that after a quarter second.
 	assert worst < 1e-4
