@@ -129,6 +129,7 @@
 					"text": "",
 					"texton": "",
 					"varname": "on_button",
+					"ignoreclick": 1,
 					"presentation": 1,
 					"presentation_rect": [
 						0,
@@ -154,18 +155,17 @@
 			{
 				"box": {
 					"id": "obj-param",
-					"maxclass": "live.numbox",
+					"maxclass": "live.toggle",
 					"numinlets": 1,
-					"numoutlets": 2,
+					"numoutlets": 1,
 					"patching_rect": [
 						20,
 						70,
-						44,
-						15
+						16,
+						16
 					],
 					"outlettype": [
-						"",
-						"float"
+						""
 					],
 					"parameter_enable": 1,
 					"varname": "on",
@@ -176,14 +176,25 @@
 						16,
 						16
 					],
-					"ignoreclick": 1,
+					"bgcolor": [
+						0.0,
+						0.0,
+						0.0,
+						0.0
+					],
+					"bgoncolor": [
+						0.0,
+						0.0,
+						0.0,
+						0.0
+					],
 					"activebgcolor": [
 						0.0,
 						0.0,
 						0.0,
 						0.0
 					],
-					"bgcolor": [
+					"activebgoncolor": [
 						0.0,
 						0.0,
 						0.0,
@@ -196,48 +207,6 @@
 						0.0
 					],
 					"focusbordercolor": [
-						0.0,
-						0.0,
-						0.0,
-						0.0
-					],
-					"textcolor": [
-						0.0,
-						0.0,
-						0.0,
-						0.0
-					],
-					"activeslidercolor": [
-						0.0,
-						0.0,
-						0.0,
-						0.0
-					],
-					"slidercolor": [
-						0.0,
-						0.0,
-						0.0,
-						0.0
-					],
-					"tricolor": [
-						0.0,
-						0.0,
-						0.0,
-						0.0
-					],
-					"activetricolor": [
-						0.0,
-						0.0,
-						0.0,
-						0.0
-					],
-					"tricolor2": [
-						0.0,
-						0.0,
-						0.0,
-						0.0
-					],
-					"activetricolor2": [
 						0.0,
 						0.0,
 						0.0,
@@ -256,39 +225,6 @@
 							"parameter_initial_enable": 1
 						}
 					}
-				}
-			},
-			{
-				"box": {
-					"id": "obj-times",
-					"maxclass": "newobj",
-					"numinlets": 2,
-					"numoutlets": 1,
-					"patching_rect": [
-						160,
-						250,
-						40,
-						22
-					],
-					"outlettype": [
-						"int"
-					],
-					"text": "* 127"
-				}
-			},
-			{
-				"box": {
-					"id": "obj-print-click",
-					"maxclass": "newobj",
-					"numinlets": 1,
-					"numoutlets": 0,
-					"patching_rect": [
-						240,
-						250,
-						120,
-						22
-					],
-					"text": "print on-click"
 				}
 			},
 			{
@@ -436,42 +372,6 @@
 					],
 					"destination": [
 						"obj-button",
-						0
-					]
-				}
-			},
-			{
-				"patchline": {
-					"source": [
-						"obj-button",
-						0
-					],
-					"destination": [
-						"obj-times",
-						0
-					]
-				}
-			},
-			{
-				"patchline": {
-					"source": [
-						"obj-times",
-						0
-					],
-					"destination": [
-						"obj-param",
-						0
-					]
-				}
-			},
-			{
-				"patchline": {
-					"source": [
-						"obj-button",
-						0
-					],
-					"destination": [
-						"obj-print-click",
 						0
 					]
 				}

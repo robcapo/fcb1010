@@ -395,6 +395,7 @@
 					"text": "",
 					"texton": "",
 					"varname": "ch1_on_button",
+					"ignoreclick": 1,
 					"presentation": 1,
 					"presentation_rect": [
 						8,
@@ -420,18 +421,17 @@
 			{
 				"box": {
 					"id": "on0-obj-param",
-					"maxclass": "live.numbox",
+					"maxclass": "live.toggle",
 					"numinlets": 1,
-					"numoutlets": 2,
+					"numoutlets": 1,
 					"patching_rect": [
 						60,
 						470,
-						44,
-						15
+						16,
+						16
 					],
 					"outlettype": [
-						"",
-						"float"
+						""
 					],
 					"parameter_enable": 1,
 					"varname": "ch1_on",
@@ -442,14 +442,25 @@
 						16,
 						16
 					],
-					"ignoreclick": 1,
+					"bgcolor": [
+						0.0,
+						0.0,
+						0.0,
+						0.0
+					],
+					"bgoncolor": [
+						0.0,
+						0.0,
+						0.0,
+						0.0
+					],
 					"activebgcolor": [
 						0.0,
 						0.0,
 						0.0,
 						0.0
 					],
-					"bgcolor": [
+					"activebgoncolor": [
 						0.0,
 						0.0,
 						0.0,
@@ -462,48 +473,6 @@
 						0.0
 					],
 					"focusbordercolor": [
-						0.0,
-						0.0,
-						0.0,
-						0.0
-					],
-					"textcolor": [
-						0.0,
-						0.0,
-						0.0,
-						0.0
-					],
-					"activeslidercolor": [
-						0.0,
-						0.0,
-						0.0,
-						0.0
-					],
-					"slidercolor": [
-						0.0,
-						0.0,
-						0.0,
-						0.0
-					],
-					"tricolor": [
-						0.0,
-						0.0,
-						0.0,
-						0.0
-					],
-					"activetricolor": [
-						0.0,
-						0.0,
-						0.0,
-						0.0
-					],
-					"tricolor2": [
-						0.0,
-						0.0,
-						0.0,
-						0.0
-					],
-					"activetricolor2": [
 						0.0,
 						0.0,
 						0.0,
@@ -522,39 +491,6 @@
 							"parameter_initial_enable": 1
 						}
 					}
-				}
-			},
-			{
-				"box": {
-					"id": "on0-obj-times",
-					"maxclass": "newobj",
-					"numinlets": 2,
-					"numoutlets": 1,
-					"patching_rect": [
-						200,
-						650,
-						40,
-						22
-					],
-					"outlettype": [
-						"int"
-					],
-					"text": "* 127"
-				}
-			},
-			{
-				"box": {
-					"id": "on0-obj-print-click",
-					"maxclass": "newobj",
-					"numinlets": 1,
-					"numoutlets": 0,
-					"patching_rect": [
-						280,
-						650,
-						120,
-						22
-					],
-					"text": "print ch1_on-click"
 				}
 			},
 			{
@@ -1043,6 +979,7 @@
 					"text": "",
 					"texton": "",
 					"varname": "ch2_on_button",
+					"ignoreclick": 1,
 					"presentation": 1,
 					"presentation_rect": [
 						164,
@@ -1068,18 +1005,17 @@
 			{
 				"box": {
 					"id": "on1-obj-param",
-					"maxclass": "live.numbox",
+					"maxclass": "live.toggle",
 					"numinlets": 1,
-					"numoutlets": 2,
+					"numoutlets": 1,
 					"patching_rect": [
 						320,
 						470,
-						44,
-						15
+						16,
+						16
 					],
 					"outlettype": [
-						"",
-						"float"
+						""
 					],
 					"parameter_enable": 1,
 					"varname": "ch2_on",
@@ -1090,14 +1026,25 @@
 						16,
 						16
 					],
-					"ignoreclick": 1,
+					"bgcolor": [
+						0.0,
+						0.0,
+						0.0,
+						0.0
+					],
+					"bgoncolor": [
+						0.0,
+						0.0,
+						0.0,
+						0.0
+					],
 					"activebgcolor": [
 						0.0,
 						0.0,
 						0.0,
 						0.0
 					],
-					"bgcolor": [
+					"activebgoncolor": [
 						0.0,
 						0.0,
 						0.0,
@@ -1110,48 +1057,6 @@
 						0.0
 					],
 					"focusbordercolor": [
-						0.0,
-						0.0,
-						0.0,
-						0.0
-					],
-					"textcolor": [
-						0.0,
-						0.0,
-						0.0,
-						0.0
-					],
-					"activeslidercolor": [
-						0.0,
-						0.0,
-						0.0,
-						0.0
-					],
-					"slidercolor": [
-						0.0,
-						0.0,
-						0.0,
-						0.0
-					],
-					"tricolor": [
-						0.0,
-						0.0,
-						0.0,
-						0.0
-					],
-					"activetricolor": [
-						0.0,
-						0.0,
-						0.0,
-						0.0
-					],
-					"tricolor2": [
-						0.0,
-						0.0,
-						0.0,
-						0.0
-					],
-					"activetricolor2": [
 						0.0,
 						0.0,
 						0.0,
@@ -1170,39 +1075,6 @@
 							"parameter_initial_enable": 1
 						}
 					}
-				}
-			},
-			{
-				"box": {
-					"id": "on1-obj-times",
-					"maxclass": "newobj",
-					"numinlets": 2,
-					"numoutlets": 1,
-					"patching_rect": [
-						460,
-						650,
-						40,
-						22
-					],
-					"outlettype": [
-						"int"
-					],
-					"text": "* 127"
-				}
-			},
-			{
-				"box": {
-					"id": "on1-obj-print-click",
-					"maxclass": "newobj",
-					"numinlets": 1,
-					"numoutlets": 0,
-					"patching_rect": [
-						540,
-						650,
-						120,
-						22
-					],
-					"text": "print ch2_on-click"
 				}
 			},
 			{
@@ -1692,42 +1564,6 @@
 			{
 				"patchline": {
 					"source": [
-						"on0-obj-button",
-						0
-					],
-					"destination": [
-						"on0-obj-times",
-						0
-					]
-				}
-			},
-			{
-				"patchline": {
-					"source": [
-						"on0-obj-times",
-						0
-					],
-					"destination": [
-						"on0-obj-param",
-						0
-					]
-				}
-			},
-			{
-				"patchline": {
-					"source": [
-						"on0-obj-button",
-						0
-					],
-					"destination": [
-						"on0-obj-print-click",
-						0
-					]
-				}
-			},
-			{
-				"patchline": {
-					"source": [
 						"on0-obj-param",
 						0
 					],
@@ -1997,42 +1833,6 @@
 					],
 					"destination": [
 						"on1-obj-button",
-						0
-					]
-				}
-			},
-			{
-				"patchline": {
-					"source": [
-						"on1-obj-button",
-						0
-					],
-					"destination": [
-						"on1-obj-times",
-						0
-					]
-				}
-			},
-			{
-				"patchline": {
-					"source": [
-						"on1-obj-times",
-						0
-					],
-					"destination": [
-						"on1-obj-param",
-						0
-					]
-				}
-			},
-			{
-				"patchline": {
-					"source": [
-						"on1-obj-button",
-						0
-					],
-					"destination": [
-						"on1-obj-print-click",
 						0
 					]
 				}

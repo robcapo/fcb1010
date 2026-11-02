@@ -8,13 +8,14 @@ toggle's objects straight into the device patcher, one set per button
 with its own parameter name. (Wrapped in a bpatcher inside the device,
 the button wasn't clickable in Live.)
 
-Inside, the Live parameter is a hidden live.numbox with an integer value
-from 0 to 127, so a macro maps onto it with a full 0-127 Min/Max. That
-value is scaled to 0-1 and split at the midpoint, so 0-63 sends 0 and
-64-127 sends 1 out of the outlet. The button you see is a second
-live.text, in Toggle mode like a live.toggle, kept out of Live's
-parameter list. It lights from that same 0/1, and clicking it sets the parameter to 0 or
-127. A number into the inlet sets the parameter too.
+Inside, the Live parameter is a live.toggle with an integer value from
+0 to 127, so a macro maps onto it with a full 0-127 Min/Max. That value
+is scaled to 0-1 and split at the midpoint, so 0-63 sends 0 and 64-127
+sends 1 out of the outlet. The toggle is see-through and sits on top of
+the button you see, so it takes clicks, Map mode and right-click. The
+button underneath is a live.text in Toggle mode that lights from the 0/1,
+since a toggle with a 0-127 range lights for any value above 0. A
+number into the inlet sets the parameter too.
 """
 
 import json
@@ -24,8 +25,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 APPVERSION = {"major": 8, "minor": 6, "revision": 5, "architecture": "x64", "modernui": 1}
 SIZE = [16, 16]
 CLEAR = [0.0, 0.0, 0.0, 0.0]
-NUMBOX_COLOURS = ["activebgcolor", "bgcolor", "bordercolor", "focusbordercolor", "textcolor",
-	"activeslidercolor", "slidercolor", "tricolor", "activetricolor", "tricolor2", "activetricolor2"]
+TOGGLE_COLOURS = ["bgcolor", "bgoncolor", "activebgcolor", "activebgoncolor", "bordercolor",
+	"focusbordercolor"]
 
 
 def box(id, maxclass, rect, numinlets, numoutlets, outlettype=None, **attrs):
@@ -66,11 +67,12 @@ def parts(prefix="", origin=(0, 0), longname="On", shortname="On", varname="on",
 		box(p("obj-off"), "message", at(20, 170, 30, 22), 2, 1, [""], text="0"),
 		box(p("obj-on"), "message", at(80, 170, 30, 22), 2, 1, [""], text="1"),
 		box(p("obj-set"), "newobj", at(160, 170, 70, 22), 1, 1, [""], text="prepend set"),
-		# The visible button is a parameter too, only so that Live draws it
+		# The visible button only shows the 0/1 state; clicks go to the
+		# toggle on top. It is a parameter too, only so that Live draws it
 		# lit when on (with parameters off it never lit). Hidden from Live
 		# (parameter_invisible 2): it isn't automatable, mappable or saved.
 		box(p("obj-button"), "live.text", at(160, 210, 16, 16), 1, 2, ["", ""],
-			parameter_enable=1, mode=1, text="", texton="", varname=varname + "_button",
+			parameter_enable=1, mode=1, text="", texton="", varname=varname + "_button", ignoreclick=1,
 			presentation=1, presentation_rect=list(presentation_rect) + SIZE,
 			saved_attribute_attributes={"valueof": {
 				"parameter_longname": longname + " Button",
@@ -80,15 +82,15 @@ def parts(prefix="", origin=(0, 0), longname="On", shortname="On", varname="on",
 				"parameter_mmax": 1,
 				"parameter_invisible": 2,
 			}}),
-		# A live.numbox, not a live.text: a Toggle-mode live.text sent 127
-		# stores 1, which reads as off.
-		box(p("obj-param"), "live.numbox", at(20, 70, 44, 15), 1, 2, ["", "float"],
+		# The Live parameter: a live.toggle with an integer 0-127 range, on
+		# the panel over the button and drawn on top of it, so clicks, Map
+		# mode and right-click all reach it. It is see-through: a toggle
+		# lights for any value above 0, so the button underneath shows the
+		# state instead.
+		box(p("obj-param"), "live.toggle", at(20, 70, 16, 16), 1, 1, [""],
 			parameter_enable=1, varname=varname,
-			# On the panel over the button, so Live's Map mode and right-click
-			# find it, but see-through and ignoring clicks, so a click
-			# reaches the button underneath.
 			presentation=1, presentation_rect=list(presentation_rect) + SIZE,
-			ignoreclick=1, **{k: CLEAR for k in NUMBOX_COLOURS},
+			**{k: CLEAR for k in TOGGLE_COLOURS},
 			saved_attribute_attributes={"valueof": {
 				"parameter_longname": longname,
 				"parameter_shortname": shortname,
@@ -98,9 +100,7 @@ def parts(prefix="", origin=(0, 0), longname="On", shortname="On", varname="on",
 				"parameter_initial": [initial],
 				"parameter_initial_enable": 1,
 			}}),
-		box(p("obj-times"), "newobj", at(160, 250, 40, 22), 2, 1, ["int"], text="* 127"),
 		# Trace in the Max Console while the button's behaviour is checked.
-		box(p("obj-print-click"), "newobj", at(240, 250, 120, 22), 1, 0, text=f"print {varname}-click"),
 		box(p("obj-print-param"), "newobj", at(240, 70, 120, 22), 1, 0, text=f"print {varname}-param"),
 		box(p("obj-print-out"), "newobj", at(240, 170, 120, 22), 1, 0, text=f"print {varname}-out"),
 	]
@@ -112,9 +112,6 @@ def parts(prefix="", origin=(0, 0), longname="On", shortname="On", varname="on",
 		line(p("obj-off"), 0, p("obj-set"), 0),
 		line(p("obj-on"), 0, p("obj-set"), 0),
 		line(p("obj-set"), 0, p("obj-button"), 0),
-		line(p("obj-button"), 0, p("obj-times"), 0),
-		line(p("obj-times"), 0, p("obj-param"), 0),
-		line(p("obj-button"), 0, p("obj-print-click"), 0),
 		line(p("obj-param"), 0, p("obj-print-param"), 0),
 		line(p("obj-off"), 0, p("obj-print-out"), 0),
 		line(p("obj-on"), 0, p("obj-print-out"), 0),
