@@ -285,6 +285,112 @@
 			},
 			{
 				"box": {
+					"id": "on0-obj-param",
+					"maxclass": "live.numbox",
+					"numinlets": 1,
+					"numoutlets": 2,
+					"patching_rect": [
+						60,
+						470,
+						44,
+						15
+					],
+					"outlettype": [
+						"",
+						"float"
+					],
+					"parameter_enable": 1,
+					"varname": "ch1_on",
+					"presentation": 1,
+					"presentation_rect": [
+						28,
+						2,
+						36,
+						18
+					],
+					"activebgcolor": [
+						0.0,
+						0.0,
+						0.0,
+						0.0
+					],
+					"bgcolor": [
+						0.0,
+						0.0,
+						0.0,
+						0.0
+					],
+					"bordercolor": [
+						0.0,
+						0.0,
+						0.0,
+						0.0
+					],
+					"focusbordercolor": [
+						0.0,
+						0.0,
+						0.0,
+						0.0
+					],
+					"textcolor": [
+						0.0,
+						0.0,
+						0.0,
+						0.0
+					],
+					"activeslidercolor": [
+						0.0,
+						0.0,
+						0.0,
+						0.0
+					],
+					"slidercolor": [
+						0.0,
+						0.0,
+						0.0,
+						0.0
+					],
+					"tricolor": [
+						0.0,
+						0.0,
+						0.0,
+						0.0
+					],
+					"activetricolor": [
+						0.0,
+						0.0,
+						0.0,
+						0.0
+					],
+					"tricolor2": [
+						0.0,
+						0.0,
+						0.0,
+						0.0
+					],
+					"activetricolor2": [
+						0.0,
+						0.0,
+						0.0,
+						0.0
+					],
+					"saved_attribute_attributes": {
+						"valueof": {
+							"parameter_longname": "CH 1 On",
+							"parameter_shortname": "On",
+							"parameter_type": 1,
+							"parameter_mmin": 0,
+							"parameter_mmax": 127,
+							"parameter_initial": [
+								127
+							],
+							"parameter_initial_enable": 1
+						}
+					}
+				}
+			},
+			{
+				"box": {
 					"id": "on0-obj-scale",
 					"maxclass": "newobj",
 					"numinlets": 6,
@@ -395,7 +501,6 @@
 					"text": "",
 					"texton": "",
 					"varname": "ch1_on_button",
-					"ignoreclick": 1,
 					"presentation": 1,
 					"presentation_rect": [
 						8,
@@ -420,77 +525,35 @@
 			},
 			{
 				"box": {
-					"id": "on0-obj-param",
-					"maxclass": "live.toggle",
-					"numinlets": 1,
+					"id": "on0-obj-times",
+					"maxclass": "newobj",
+					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
-						60,
-						470,
-						16,
-						16
+						200,
+						650,
+						40,
+						22
 					],
 					"outlettype": [
-						""
+						"int"
 					],
-					"parameter_enable": 1,
-					"varname": "ch1_on",
-					"presentation": 1,
-					"presentation_rect": [
-						8,
-						4,
-						16,
-						16
+					"text": "* 127"
+				}
+			},
+			{
+				"box": {
+					"id": "on0-obj-print-click",
+					"maxclass": "newobj",
+					"numinlets": 1,
+					"numoutlets": 0,
+					"patching_rect": [
+						280,
+						650,
+						120,
+						22
 					],
-					"bgcolor": [
-						0.0,
-						0.0,
-						0.0,
-						0.0
-					],
-					"bgoncolor": [
-						0.0,
-						0.0,
-						0.0,
-						0.0
-					],
-					"activebgcolor": [
-						0.0,
-						0.0,
-						0.0,
-						0.0
-					],
-					"activebgoncolor": [
-						0.0,
-						0.0,
-						0.0,
-						0.0
-					],
-					"bordercolor": [
-						0.0,
-						0.0,
-						0.0,
-						0.0
-					],
-					"focusbordercolor": [
-						0.0,
-						0.0,
-						0.0,
-						0.0
-					],
-					"saved_attribute_attributes": {
-						"valueof": {
-							"parameter_longname": "CH 1 On",
-							"parameter_shortname": "On",
-							"parameter_type": 1,
-							"parameter_mmin": 0,
-							"parameter_mmax": 127,
-							"parameter_initial": [
-								127
-							],
-							"parameter_initial_enable": 1
-						}
-					}
+					"text": "print ch1_on-click"
 				}
 			},
 			{
@@ -869,6 +932,112 @@
 			},
 			{
 				"box": {
+					"id": "on1-obj-param",
+					"maxclass": "live.numbox",
+					"numinlets": 1,
+					"numoutlets": 2,
+					"patching_rect": [
+						320,
+						470,
+						44,
+						15
+					],
+					"outlettype": [
+						"",
+						"float"
+					],
+					"parameter_enable": 1,
+					"varname": "ch2_on",
+					"presentation": 1,
+					"presentation_rect": [
+						184,
+						2,
+						36,
+						18
+					],
+					"activebgcolor": [
+						0.0,
+						0.0,
+						0.0,
+						0.0
+					],
+					"bgcolor": [
+						0.0,
+						0.0,
+						0.0,
+						0.0
+					],
+					"bordercolor": [
+						0.0,
+						0.0,
+						0.0,
+						0.0
+					],
+					"focusbordercolor": [
+						0.0,
+						0.0,
+						0.0,
+						0.0
+					],
+					"textcolor": [
+						0.0,
+						0.0,
+						0.0,
+						0.0
+					],
+					"activeslidercolor": [
+						0.0,
+						0.0,
+						0.0,
+						0.0
+					],
+					"slidercolor": [
+						0.0,
+						0.0,
+						0.0,
+						0.0
+					],
+					"tricolor": [
+						0.0,
+						0.0,
+						0.0,
+						0.0
+					],
+					"activetricolor": [
+						0.0,
+						0.0,
+						0.0,
+						0.0
+					],
+					"tricolor2": [
+						0.0,
+						0.0,
+						0.0,
+						0.0
+					],
+					"activetricolor2": [
+						0.0,
+						0.0,
+						0.0,
+						0.0
+					],
+					"saved_attribute_attributes": {
+						"valueof": {
+							"parameter_longname": "CH 2 On",
+							"parameter_shortname": "On",
+							"parameter_type": 1,
+							"parameter_mmin": 0,
+							"parameter_mmax": 127,
+							"parameter_initial": [
+								0
+							],
+							"parameter_initial_enable": 1
+						}
+					}
+				}
+			},
+			{
+				"box": {
 					"id": "on1-obj-scale",
 					"maxclass": "newobj",
 					"numinlets": 6,
@@ -979,7 +1148,6 @@
 					"text": "",
 					"texton": "",
 					"varname": "ch2_on_button",
-					"ignoreclick": 1,
 					"presentation": 1,
 					"presentation_rect": [
 						164,
@@ -1004,77 +1172,35 @@
 			},
 			{
 				"box": {
-					"id": "on1-obj-param",
-					"maxclass": "live.toggle",
-					"numinlets": 1,
+					"id": "on1-obj-times",
+					"maxclass": "newobj",
+					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
-						320,
-						470,
-						16,
-						16
+						460,
+						650,
+						40,
+						22
 					],
 					"outlettype": [
-						""
+						"int"
 					],
-					"parameter_enable": 1,
-					"varname": "ch2_on",
-					"presentation": 1,
-					"presentation_rect": [
-						164,
-						4,
-						16,
-						16
+					"text": "* 127"
+				}
+			},
+			{
+				"box": {
+					"id": "on1-obj-print-click",
+					"maxclass": "newobj",
+					"numinlets": 1,
+					"numoutlets": 0,
+					"patching_rect": [
+						540,
+						650,
+						120,
+						22
 					],
-					"bgcolor": [
-						0.0,
-						0.0,
-						0.0,
-						0.0
-					],
-					"bgoncolor": [
-						0.0,
-						0.0,
-						0.0,
-						0.0
-					],
-					"activebgcolor": [
-						0.0,
-						0.0,
-						0.0,
-						0.0
-					],
-					"activebgoncolor": [
-						0.0,
-						0.0,
-						0.0,
-						0.0
-					],
-					"bordercolor": [
-						0.0,
-						0.0,
-						0.0,
-						0.0
-					],
-					"focusbordercolor": [
-						0.0,
-						0.0,
-						0.0,
-						0.0
-					],
-					"saved_attribute_attributes": {
-						"valueof": {
-							"parameter_longname": "CH 2 On",
-							"parameter_shortname": "On",
-							"parameter_type": 1,
-							"parameter_mmin": 0,
-							"parameter_mmax": 127,
-							"parameter_initial": [
-								0
-							],
-							"parameter_initial_enable": 1
-						}
-					}
+					"text": "print ch2_on-click"
 				}
 			},
 			{
@@ -1564,6 +1690,42 @@
 			{
 				"patchline": {
 					"source": [
+						"on0-obj-button",
+						0
+					],
+					"destination": [
+						"on0-obj-times",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"on0-obj-times",
+						0
+					],
+					"destination": [
+						"on0-obj-param",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"on0-obj-button",
+						0
+					],
+					"destination": [
+						"on0-obj-print-click",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
 						"on0-obj-param",
 						0
 					],
@@ -1833,6 +1995,42 @@
 					],
 					"destination": [
 						"on1-obj-button",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"on1-obj-button",
+						0
+					],
+					"destination": [
+						"on1-obj-times",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"on1-obj-times",
+						0
+					],
+					"destination": [
+						"on1-obj-param",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"on1-obj-button",
+						0
+					],
+					"destination": [
+						"on1-obj-print-click",
 						0
 					]
 				}

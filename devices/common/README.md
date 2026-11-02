@@ -9,11 +9,15 @@ An on/off button for devices whose switches are driven by rack macros.
   different ranges on the same macro, so they switch at different points.
 - **Output:** 0 for 0 to 63, 1 for 64 to 127, sent out of its outlet.
 - **Looks:** a live.text in Toggle mode, like a live.toggle, lit only
-  when the output is 1. On top of it sits the see-through live.toggle
-  that is the actual parameter, so clicks, Map mode and right-click all
-  reach it. (A live.toggle or live.text with a 0 to 127 range lights for
-  any value above 0, so it can't show the state itself.)
-- **Click:** flips the parameter, and so the output.
+  when the output is 1.
+- **Click:** flips the output, by setting the parameter to 0 or 127.
+- **Mapping:** the 0 to 127 parameter is a see-through live.numbox placed
+  over the button's label (Kingtone: the "CH 1" / "CH 2" text). Right-click
+  the label, or click it in the rack's Map mode, to map a macro. It can't
+  share the button's spot: on top it would take the button's clicks, and
+  set to ignore clicks it can't be mapped either. (A live.toggle or
+  live.text can't be the parameter: they only hold 0 or 1, and light for
+  any value above 0.)
 - **Inlet:** a number from 0 to 127 sets it.
 
 `MacroToggle.maxpat` is the abstraction on its own, for a bpatcher in

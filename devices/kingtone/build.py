@@ -126,6 +126,7 @@ def device_patcher(code):
 		prepend = f"obj-onprepend-{i}"
 		on_boxes, on_lines, param, outs, button = macrotoggle.parts(
 			prefix=f"on{i}-", origin=(40 + i * 260, 400), presentation_rect=(cx, 4),
+			handle_rect=(cx + 20, 2, 36, 18),
 			longname=f"{label} On", shortname="On", varname=f"ch{i + 1}_on",
 			initial=127 if i == 0 else 0)
 		boxes.extend(on_boxes)
