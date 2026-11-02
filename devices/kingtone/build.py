@@ -11,8 +11,11 @@ embedded in the patch, so the .amxd has no external dependencies.
 import json
 import os
 import struct
+import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(HERE, "..", "common"))
+import macrotoggle  # noqa: E402
 APPVERSION = {"major": 8, "minor": 6, "revision": 5, "architecture": "x64", "modernui": 1}
 
 SIDES = ["a", "b"]
@@ -92,7 +95,7 @@ def device_patcher(code):
 	parameters = {}
 	n = 0
 
-	def control(maxclass, name, param, rect, size, numoutlets, outlettype, valueof, wire=True, **attrs):
+	def control(maxclass, name, param, rect, size, numoutlets, outlettype, valueof, **attrs):
 		nonlocal n
 		# Live finds a parameter's object by its scripting name, so keep it
 		# to one plain word: "ch1_drive", not the "CH 1 Drive" long name.
@@ -103,15 +106,13 @@ def device_patcher(code):
 		y = 60 + (n // 6) * 120
 		n += 1
 		boxes.append(box(obj, maxclass, [x, y] + size, 1, numoutlets, outlettype,
-			parameter_enable=1, **({} if rect is None else {"presentation": 1, "presentation_rect": rect + size}),
+			parameter_enable=1, presentation=1, presentation_rect=rect + size,
 			varname=varname, saved_attribute_attributes={"valueof": valueof}, **attrs))
 		boxes.append(box(prepend, "newobj", [x, y + 70, 100, 22], 1, 1, [""],
 			text=f"prepend {param}"))
-		if wire:
-			lines.append(line(obj, 0, prepend, 0))
+		lines.append(line(obj, 0, prepend, 0))
 		lines.append(line(prepend, 0, "obj-gen", 0))
 		parameters[obj] = [name, valueof["parameter_shortname"], 0]
-		return obj, prepend, x, y
 
 	for i, side in enumerate(SIDES):
 		cx = COLUMN_X[i]
@@ -119,42 +120,17 @@ def device_patcher(code):
 		boxes.append(box(f"obj-label-{i}", "comment", [300 + i * 60, 20, 50, 20], 1, 0,
 			text=label, presentation=1, presentation_rect=[cx + 20, 2, 50, 18],
 			fontsize=11, fontface=1))
-		# The On parameter is a live.text toggle with an integer 0-127 value,
-		# so a rack macro maps onto it over the full range. The patch scales
-		# it to 0-1 and splits at the midpoint into the 0/1 gen~ expects:
-		# 0-63 is off, 64-127 is on. A live.text lights for any value above
-		# 0, so the parameter stays off the panel; the button you see is a
-		# second live.text that isn't a parameter. It shows the 0/1 result,
-		# and clicking it sets the parameter to 0 or 127.
-		on, prepend, x, y = control("live.text", f"{label} On", f"{side}_on", None, [16, 16], 2, ["", ""], {
-			"parameter_longname": f"{label} On",
-			"parameter_shortname": "On",
-			"parameter_type": 1,
-			"parameter_mmin": 0,
-			"parameter_mmax": 127,
-			"parameter_initial": [127 if i == 0 else 0],
-			"parameter_initial_enable": 1,
-		}, wire=False, mode=1, text="", texton="")
-		scale, split = f"obj-onscale-{i}", f"obj-onsplit-{i}"
-		button, setter, times = f"obj-onbutton-{i}", f"obj-onset-{i}", f"obj-ontimes-{i}"
-		boxes.append(box(scale, "newobj", [x, y + 25, 110, 22], 6, 1, [""], text="scale 0 127 0. 1."))
-		boxes.append(box(split, "newobj", [x, y + 50, 80, 22], 3, 2, ["", ""], text="split 0. 0.5"))
-		boxes.append(box(button, "live.text", [40 + i * 60, 400, 16, 16], 1, 2, ["", ""],
-			parameter_enable=0, mode=1, text="", texton="",
-			presentation=1, presentation_rect=[cx, 4, 16, 16]))
-		boxes.append(box(setter, "newobj", [40 + i * 60, 370, 70, 22], 1, 1, [""], text="prepend set"))
-		boxes.append(box(times, "newobj", [40 + i * 60, 430, 40, 22], 2, 1, ["int"], text="* 127"))
-		lines.append(line(on, 0, scale, 0))
-		lines.append(line(scale, 0, split, 0))
-		for k, value in enumerate(("0", "1")):
-			msg = f"obj-onmsg-{i}-{value}"
-			boxes.append(box(msg, "message", [x + 110 + k * 40, y + 50, 30, 22], 2, 1, [""], text=value))
-			lines.append(line(split, k, msg, 0))
-			lines.append(line(msg, 0, prepend, 0))
-			lines.append(line(msg, 0, setter, 0))
-		lines.append(line(setter, 0, button, 0))
-		lines.append(line(button, 0, times, 0))
-		lines.append(line(times, 0, on, 0))
+		# The On button is a MacroToggle (devices/common): a rack macro maps
+		# onto it over 0-127, it turns on at 64 and up, and it sends 0 or 1.
+		toggle, prepend = f"obj-onbp-{i}", f"obj-onprepend-{i}"
+		boxes.append(macrotoggle.bpatcher(toggle, [40 + i * 120, 400], [cx, 4],
+			longname=f"{label} On", shortname="On", varname=f"ch{i + 1}_on",
+			initial=127 if i == 0 else 0))
+		boxes.append(box(prepend, "newobj", [40 + i * 120, 440, 100, 22], 1, 1, [""],
+			text=f"prepend {side}_on"))
+		lines.append(line(toggle, 0, prepend, 0))
+		lines.append(line(prepend, 0, "obj-gen", 0))
+		parameters[f"{toggle}::obj-param"] = [f"{label} On", "On", 0]
 		control("live.tab", f"{label} Mode", f"{side}_mode", [cx, 22], [140, 18], 3, ["", "", "float"], {
 			"parameter_longname": f"{label} Mode",
 			"parameter_shortname": "Mode",
