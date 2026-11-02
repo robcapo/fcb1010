@@ -186,6 +186,29 @@ def device_patcher(code):
 			"minimum_live_version": "",
 			"minimum_max_version": "",
 			"platform_compatibility": 0,
+			# Max treats a device as a project; without this section it logs
+			# "a project without a name is like a day without sunshine".
+			"project": {
+				"version": 1,
+				"creationdate": 3590052786,
+				"modificationdate": 3590052786,
+				"viewrect": [25.0, 106.0, 300.0, 500.0],
+				"autoorganize": 1,
+				"hideprojectwindow": 1,
+				"showdependencies": 1,
+				"autolocalize": 0,
+				"contents": {"patchers": {}},
+				"layout": {},
+				"searchpath": {},
+				"detailsvisible": 0,
+				"amxdtype": int.from_bytes(b"aaaa", "big"),
+				"readonly": 0,
+				"devpathtype": 0,
+				"devpath": ".",
+				"sortmode": 0,
+				"viewmode": 0,
+				"includepackages": 0,
+			},
 			"autosave": 0,
 		}
 	}

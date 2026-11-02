@@ -2337,6 +2337,34 @@
 		"minimum_live_version": "",
 		"minimum_max_version": "",
 		"platform_compatibility": 0,
+		"project": {
+			"version": 1,
+			"creationdate": 3590052786,
+			"modificationdate": 3590052786,
+			"viewrect": [
+				25.0,
+				106.0,
+				300.0,
+				500.0
+			],
+			"autoorganize": 1,
+			"hideprojectwindow": 1,
+			"showdependencies": 1,
+			"autolocalize": 0,
+			"contents": {
+				"patchers": {}
+			},
+			"layout": {},
+			"searchpath": {},
+			"detailsvisible": 0,
+			"amxdtype": 1633771873,
+			"readonly": 0,
+			"devpathtype": 0,
+			"devpath": ".",
+			"sortmode": 0,
+			"viewmode": 0,
+			"includepackages": 0
+		},
 		"autosave": 0
 	}
 }
