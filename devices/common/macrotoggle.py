@@ -23,6 +23,9 @@ import os
 HERE = os.path.dirname(os.path.abspath(__file__))
 APPVERSION = {"major": 8, "minor": 6, "revision": 5, "architecture": "x64", "modernui": 1}
 SIZE = [16, 16]
+CLEAR = [0.0, 0.0, 0.0, 0.0]
+NUMBOX_COLOURS = ["activebgcolor", "bgcolor", "bordercolor", "focusbordercolor", "textcolor",
+	"activeslidercolor", "slidercolor", "tricolor", "activetricolor", "tricolor2", "activetricolor2"]
 
 
 def box(id, maxclass, rect, numinlets, numoutlets, outlettype=None, **attrs):
@@ -58,19 +61,6 @@ def parts(prefix="", origin=(0, 0), longname="On", shortname="On", varname="on",
 
 	p = lambda name: prefix + name  # noqa: E731
 	boxes = [
-		# A live.numbox, not a live.text: a Toggle-mode live.text sent 127
-		# stores 1, which reads as off.
-		box(p("obj-param"), "live.numbox", at(20, 70, 44, 15), 1, 2, ["", "float"],
-			parameter_enable=1, varname=varname,
-			saved_attribute_attributes={"valueof": {
-				"parameter_longname": longname,
-				"parameter_shortname": shortname,
-				"parameter_type": 1,
-				"parameter_mmin": 0,
-				"parameter_mmax": 127,
-				"parameter_initial": [initial],
-				"parameter_initial_enable": 1,
-			}}),
 		box(p("obj-scale"), "newobj", at(20, 110, 110, 22), 6, 1, [""], text="scale 0 127 0. 1."),
 		box(p("obj-split"), "newobj", at(20, 140, 80, 22), 3, 2, ["", ""], text="split 0. 0.5"),
 		box(p("obj-off"), "message", at(20, 170, 30, 22), 2, 1, [""], text="0"),
@@ -89,6 +79,24 @@ def parts(prefix="", origin=(0, 0), longname="On", shortname="On", varname="on",
 				"parameter_enum": ["off", "on"],
 				"parameter_mmax": 1,
 				"parameter_invisible": 2,
+			}}),
+		# A live.numbox, not a live.text: a Toggle-mode live.text sent 127
+		# stores 1, which reads as off.
+		box(p("obj-param"), "live.numbox", at(20, 70, 44, 15), 1, 2, ["", "float"],
+			parameter_enable=1, varname=varname,
+			# On the panel over the button, so Live's Map mode and right-click
+			# find it, but see-through and ignoring clicks, so a click
+			# reaches the button underneath.
+			presentation=1, presentation_rect=list(presentation_rect) + SIZE,
+			ignoreclick=1, **{k: CLEAR for k in NUMBOX_COLOURS},
+			saved_attribute_attributes={"valueof": {
+				"parameter_longname": longname,
+				"parameter_shortname": shortname,
+				"parameter_type": 1,
+				"parameter_mmin": 0,
+				"parameter_mmax": 127,
+				"parameter_initial": [initial],
+				"parameter_initial_enable": 1,
 			}}),
 		box(p("obj-times"), "newobj", at(160, 250, 40, 22), 2, 1, ["int"], text="* 127"),
 		# Trace in the Max Console while the button's behaviour is checked.

@@ -19,39 +19,6 @@
 		"boxes": [
 			{
 				"box": {
-					"id": "obj-param",
-					"maxclass": "live.numbox",
-					"numinlets": 1,
-					"numoutlets": 2,
-					"patching_rect": [
-						20,
-						70,
-						44,
-						15
-					],
-					"outlettype": [
-						"",
-						"float"
-					],
-					"parameter_enable": 1,
-					"varname": "on",
-					"saved_attribute_attributes": {
-						"valueof": {
-							"parameter_longname": "On",
-							"parameter_shortname": "On",
-							"parameter_type": 1,
-							"parameter_mmin": 0,
-							"parameter_mmax": 127,
-							"parameter_initial": [
-								0
-							],
-							"parameter_initial_enable": 1
-						}
-					}
-				}
-			},
-			{
-				"box": {
 					"id": "obj-scale",
 					"maxclass": "newobj",
 					"numinlets": 6,
@@ -180,6 +147,113 @@
 							],
 							"parameter_mmax": 1,
 							"parameter_invisible": 2
+						}
+					}
+				}
+			},
+			{
+				"box": {
+					"id": "obj-param",
+					"maxclass": "live.numbox",
+					"numinlets": 1,
+					"numoutlets": 2,
+					"patching_rect": [
+						20,
+						70,
+						44,
+						15
+					],
+					"outlettype": [
+						"",
+						"float"
+					],
+					"parameter_enable": 1,
+					"varname": "on",
+					"presentation": 1,
+					"presentation_rect": [
+						0,
+						0,
+						16,
+						16
+					],
+					"ignoreclick": 1,
+					"activebgcolor": [
+						0.0,
+						0.0,
+						0.0,
+						0.0
+					],
+					"bgcolor": [
+						0.0,
+						0.0,
+						0.0,
+						0.0
+					],
+					"bordercolor": [
+						0.0,
+						0.0,
+						0.0,
+						0.0
+					],
+					"focusbordercolor": [
+						0.0,
+						0.0,
+						0.0,
+						0.0
+					],
+					"textcolor": [
+						0.0,
+						0.0,
+						0.0,
+						0.0
+					],
+					"activeslidercolor": [
+						0.0,
+						0.0,
+						0.0,
+						0.0
+					],
+					"slidercolor": [
+						0.0,
+						0.0,
+						0.0,
+						0.0
+					],
+					"tricolor": [
+						0.0,
+						0.0,
+						0.0,
+						0.0
+					],
+					"activetricolor": [
+						0.0,
+						0.0,
+						0.0,
+						0.0
+					],
+					"tricolor2": [
+						0.0,
+						0.0,
+						0.0,
+						0.0
+					],
+					"activetricolor2": [
+						0.0,
+						0.0,
+						0.0,
+						0.0
+					],
+					"saved_attribute_attributes": {
+						"valueof": {
+							"parameter_longname": "On",
+							"parameter_shortname": "On",
+							"parameter_type": 1,
+							"parameter_mmin": 0,
+							"parameter_mmax": 127,
+							"parameter_initial": [
+								0
+							],
+							"parameter_initial_enable": 1
 						}
 					}
 				}
