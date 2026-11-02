@@ -423,17 +423,31 @@
 						"",
 						""
 					],
-					"parameter_enable": 0,
+					"parameter_enable": 1,
 					"mode": 1,
 					"text": "",
 					"texton": "",
+					"varname": "ch1_on_button",
 					"presentation": 1,
 					"presentation_rect": [
 						8,
 						4,
 						16,
 						16
-					]
+					],
+					"saved_attribute_attributes": {
+						"valueof": {
+							"parameter_longname": "CH 1 On Button",
+							"parameter_shortname": "On",
+							"parameter_type": 2,
+							"parameter_enum": [
+								"off",
+								"on"
+							],
+							"parameter_mmax": 1,
+							"parameter_invisible": 2
+						}
+					}
 				}
 			},
 			{
@@ -983,17 +997,31 @@
 						"",
 						""
 					],
-					"parameter_enable": 0,
+					"parameter_enable": 1,
 					"mode": 1,
 					"text": "",
 					"texton": "",
+					"varname": "ch2_on_button",
 					"presentation": 1,
 					"presentation_rect": [
 						164,
 						4,
 						16,
 						16
-					]
+					],
+					"saved_attribute_attributes": {
+						"valueof": {
+							"parameter_longname": "CH 2 On Button",
+							"parameter_shortname": "On",
+							"parameter_type": 2,
+							"parameter_enum": [
+								"off",
+								"on"
+							],
+							"parameter_mmax": 1,
+							"parameter_invisible": 2
+						}
+					}
 				}
 			},
 			{
@@ -2060,6 +2088,11 @@
 				"On",
 				0
 			],
+			"on0-obj-button": [
+				"CH 1 On Button",
+				"On",
+				0
+			],
 			"obj-ctl-0": [
 				"CH 1 Mode",
 				"Mode",
@@ -2087,6 +2120,11 @@
 			],
 			"on1-obj-param": [
 				"CH 2 On",
+				"On",
+				0
+			],
+			"on1-obj-button": [
+				"CH 2 On Button",
 				"On",
 				0
 			],

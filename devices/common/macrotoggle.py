@@ -12,8 +12,8 @@ Inside, the Live parameter is a hidden live.numbox with an integer value
 from 0 to 127, so a macro maps onto it with a full 0-127 Min/Max. That
 value is scaled to 0-1 and split at the midpoint, so 0-63 sends 0 and
 64-127 sends 1 out of the outlet. The button you see is a second
-live.text, in Toggle mode like a live.toggle, that isn't a parameter. It
-lights from that same 0/1, and clicking it sets the parameter to 0 or
+live.text, in Toggle mode like a live.toggle, kept out of Live's
+parameter list. It lights from that same 0/1, and clicking it sets the parameter to 0 or
 127. A number into the inlet sets the parameter too.
 """
 
@@ -76,9 +76,20 @@ def parts(prefix="", origin=(0, 0), longname="On", shortname="On", varname="on",
 		box(p("obj-off"), "message", at(20, 170, 30, 22), 2, 1, [""], text="0"),
 		box(p("obj-on"), "message", at(80, 170, 30, 22), 2, 1, [""], text="1"),
 		box(p("obj-set"), "newobj", at(160, 170, 70, 22), 1, 1, [""], text="prepend set"),
+		# The visible button is a parameter too, only so that Live draws it
+		# lit when on (with parameters off it never lit). Hidden from Live
+		# (parameter_invisible 2): it isn't automatable, mappable or saved.
 		box(p("obj-button"), "live.text", at(160, 210, 16, 16), 1, 2, ["", ""],
-			parameter_enable=0, mode=1, text="", texton="",
-			presentation=1, presentation_rect=list(presentation_rect) + SIZE),
+			parameter_enable=1, mode=1, text="", texton="", varname=varname + "_button",
+			presentation=1, presentation_rect=list(presentation_rect) + SIZE,
+			saved_attribute_attributes={"valueof": {
+				"parameter_longname": longname + " Button",
+				"parameter_shortname": shortname,
+				"parameter_type": 2,
+				"parameter_enum": ["off", "on"],
+				"parameter_mmax": 1,
+				"parameter_invisible": 2,
+			}}),
 		box(p("obj-times"), "newobj", at(160, 250, 40, 22), 2, 1, ["int"], text="* 127"),
 		# Trace in the Max Console while the button's behaviour is checked.
 		box(p("obj-print-click"), "newobj", at(240, 250, 120, 22), 1, 0, text=f"print {varname}-click"),
@@ -100,12 +111,12 @@ def parts(prefix="", origin=(0, 0), longname="On", shortname="On", varname="on",
 		line(p("obj-off"), 0, p("obj-print-out"), 0),
 		line(p("obj-on"), 0, p("obj-print-out"), 0),
 	]
-	return boxes, lines, p("obj-param"), [p("obj-off"), p("obj-on")]
+	return boxes, lines, p("obj-param"), [p("obj-off"), p("obj-on")], p("obj-button")
 
 
 def patcher(**names):
 	"""The standalone abstraction: parts() plus an inlet and an outlet."""
-	boxes, lines, param, outs = parts(**names)
+	boxes, lines, param, outs, button = parts(**names)
 	boxes.append(box("obj-in", "inlet", [20, 20, 30, 30], 0, 1, [""], comment="0-127 sets the toggle"))
 	boxes.append(box("obj-out", "outlet", [20, 290, 30, 30], 1, 0, comment="0 off, 1 on"))
 	lines.append(line("obj-in", 0, param, 0))
@@ -119,7 +130,11 @@ def patcher(**names):
 		"openinpresentation": 1,
 		"boxes": boxes,
 		"lines": lines,
-		"parameters": {"obj-param": [longname, names.get("shortname", "On"), 0], "inherited_shortname": 1},
+		"parameters": {
+			"obj-param": [longname, names.get("shortname", "On"), 0],
+			"obj-button": [longname + " Button", names.get("shortname", "On"), 0],
+			"inherited_shortname": 1,
+		},
 		"autosave": 0,
 	}
 

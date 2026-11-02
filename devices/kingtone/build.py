@@ -124,7 +124,7 @@ def device_patcher(code):
 		# the patch: a rack macro maps onto it over 0-127, it turns on at 64
 		# and up, and it sends 0 or 1.
 		prepend = f"obj-onprepend-{i}"
-		on_boxes, on_lines, param, outs = macrotoggle.parts(
+		on_boxes, on_lines, param, outs, button = macrotoggle.parts(
 			prefix=f"on{i}-", origin=(40 + i * 260, 400), presentation_rect=(cx, 4),
 			longname=f"{label} On", shortname="On", varname=f"ch{i + 1}_on",
 			initial=127 if i == 0 else 0)
@@ -135,6 +135,7 @@ def device_patcher(code):
 		lines.extend(line(o, 0, prepend, 0) for o in outs)
 		lines.append(line(prepend, 0, "obj-gen", 0))
 		parameters[param] = [f"{label} On", "On", 0]
+		parameters[button] = [f"{label} On Button", "On", 0]
 		control("live.tab", f"{label} Mode", f"{side}_mode", [cx, 22], [140, 18], 3, ["", "", "float"], {
 			"parameter_longname": f"{label} Mode",
 			"parameter_shortname": "Mode",
@@ -157,7 +158,7 @@ def device_patcher(code):
 				"parameter_unitstyle": 1,
 			})
 	# One bank per side, in the order Live and Push show them.
-	longnames = [v[0] for k, v in parameters.items()]
+	longnames = [v[0] for k, v in parameters.items() if not v[0].endswith(" Button")]
 	parameters["parameterbanks"] = {
 		str(i): {"index": i, "name": label, "parameters": ([n for n in longnames if n.startswith(label)] + ["-"] * 8)[:8]}
 		for i, label in enumerate(COLUMN_LABEL)

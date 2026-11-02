@@ -157,17 +157,31 @@
 						"",
 						""
 					],
-					"parameter_enable": 0,
+					"parameter_enable": 1,
 					"mode": 1,
 					"text": "",
 					"texton": "",
+					"varname": "on_button",
 					"presentation": 1,
 					"presentation_rect": [
 						0,
 						0,
 						16,
 						16
-					]
+					],
+					"saved_attribute_attributes": {
+						"valueof": {
+							"parameter_longname": "On Button",
+							"parameter_shortname": "On",
+							"parameter_type": 2,
+							"parameter_enum": [
+								"off",
+								"on"
+							],
+							"parameter_mmax": 1,
+							"parameter_invisible": 2
+						}
+					}
 				}
 			},
 			{
@@ -464,6 +478,11 @@
 		"parameters": {
 			"obj-param": [
 				"On",
+				"On",
+				0
+			],
+			"obj-button": [
+				"On Button",
 				"On",
 				0
 			],
