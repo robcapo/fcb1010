@@ -78,6 +78,10 @@ def parts(prefix="", origin=(0, 0), longname="On", shortname="On", varname="on",
 			parameter_enable=0, mode=1, text="", texton="",
 			presentation=1, presentation_rect=list(presentation_rect) + SIZE),
 		box(p("obj-times"), "newobj", at(160, 250, 40, 22), 2, 1, ["int"], text="* 127"),
+		# Trace in the Max Console while the button's behaviour is checked.
+		box(p("obj-print-click"), "newobj", at(240, 250, 120, 22), 1, 0, text=f"print {varname}-click"),
+		box(p("obj-print-param"), "newobj", at(240, 70, 120, 22), 1, 0, text=f"print {varname}-param"),
+		box(p("obj-print-out"), "newobj", at(240, 170, 120, 22), 1, 0, text=f"print {varname}-out"),
 	]
 	lines = [
 		line(p("obj-param"), 0, p("obj-scale"), 0),
@@ -89,6 +93,10 @@ def parts(prefix="", origin=(0, 0), longname="On", shortname="On", varname="on",
 		line(p("obj-set"), 0, p("obj-button"), 0),
 		line(p("obj-button"), 0, p("obj-times"), 0),
 		line(p("obj-times"), 0, p("obj-param"), 0),
+		line(p("obj-button"), 0, p("obj-print-click"), 0),
+		line(p("obj-param"), 0, p("obj-print-param"), 0),
+		line(p("obj-off"), 0, p("obj-print-out"), 0),
+		line(p("obj-on"), 0, p("obj-print-out"), 0),
 	]
 	return boxes, lines, p("obj-param"), [p("obj-off"), p("obj-on")]
 

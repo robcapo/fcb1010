@@ -193,6 +193,51 @@
 			},
 			{
 				"box": {
+					"id": "obj-print-click",
+					"maxclass": "newobj",
+					"numinlets": 1,
+					"numoutlets": 0,
+					"patching_rect": [
+						240,
+						250,
+						120,
+						22
+					],
+					"text": "print on-click"
+				}
+			},
+			{
+				"box": {
+					"id": "obj-print-param",
+					"maxclass": "newobj",
+					"numinlets": 1,
+					"numoutlets": 0,
+					"patching_rect": [
+						240,
+						70,
+						120,
+						22
+					],
+					"text": "print on-param"
+				}
+			},
+			{
+				"box": {
+					"id": "obj-print-out",
+					"maxclass": "newobj",
+					"numinlets": 1,
+					"numoutlets": 0,
+					"patching_rect": [
+						240,
+						170,
+						120,
+						22
+					],
+					"text": "print on-out"
+				}
+			},
+			{
+				"box": {
 					"id": "obj-in",
 					"maxclass": "inlet",
 					"numinlets": 0,
@@ -330,6 +375,54 @@
 					],
 					"destination": [
 						"obj-param",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"obj-button",
+						0
+					],
+					"destination": [
+						"obj-print-click",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"obj-param",
+						0
+					],
+					"destination": [
+						"obj-print-param",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"obj-off",
+						0
+					],
+					"destination": [
+						"obj-print-out",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"obj-on",
+						0
+					],
+					"destination": [
+						"obj-print-out",
 						0
 					]
 				}

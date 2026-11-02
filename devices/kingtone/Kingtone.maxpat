@@ -459,6 +459,51 @@
 			},
 			{
 				"box": {
+					"id": "on0-obj-print-click",
+					"maxclass": "newobj",
+					"numinlets": 1,
+					"numoutlets": 0,
+					"patching_rect": [
+						280,
+						650,
+						120,
+						22
+					],
+					"text": "print ch1_on-click"
+				}
+			},
+			{
+				"box": {
+					"id": "on0-obj-print-param",
+					"maxclass": "newobj",
+					"numinlets": 1,
+					"numoutlets": 0,
+					"patching_rect": [
+						280,
+						470,
+						120,
+						22
+					],
+					"text": "print ch1_on-param"
+				}
+			},
+			{
+				"box": {
+					"id": "on0-obj-print-out",
+					"maxclass": "newobj",
+					"numinlets": 1,
+					"numoutlets": 0,
+					"patching_rect": [
+						280,
+						570,
+						120,
+						22
+					],
+					"text": "print ch1_on-out"
+				}
+			},
+			{
+				"box": {
 					"id": "obj-onprepend-0",
 					"maxclass": "newobj",
 					"numinlets": 1,
@@ -977,6 +1022,51 @@
 			},
 			{
 				"box": {
+					"id": "on1-obj-print-click",
+					"maxclass": "newobj",
+					"numinlets": 1,
+					"numoutlets": 0,
+					"patching_rect": [
+						540,
+						650,
+						120,
+						22
+					],
+					"text": "print ch2_on-click"
+				}
+			},
+			{
+				"box": {
+					"id": "on1-obj-print-param",
+					"maxclass": "newobj",
+					"numinlets": 1,
+					"numoutlets": 0,
+					"patching_rect": [
+						540,
+						470,
+						120,
+						22
+					],
+					"text": "print ch2_on-param"
+				}
+			},
+			{
+				"box": {
+					"id": "on1-obj-print-out",
+					"maxclass": "newobj",
+					"numinlets": 1,
+					"numoutlets": 0,
+					"patching_rect": [
+						540,
+						570,
+						120,
+						22
+					],
+					"text": "print ch2_on-out"
+				}
+			},
+			{
+				"box": {
 					"id": "obj-onprepend-1",
 					"maxclass": "newobj",
 					"numinlets": 1,
@@ -1456,6 +1546,54 @@
 			{
 				"patchline": {
 					"source": [
+						"on0-obj-button",
+						0
+					],
+					"destination": [
+						"on0-obj-print-click",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"on0-obj-param",
+						0
+					],
+					"destination": [
+						"on0-obj-print-param",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"on0-obj-off",
+						0
+					],
+					"destination": [
+						"on0-obj-print-out",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"on0-obj-on",
+						0
+					],
+					"destination": [
+						"on0-obj-print-out",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
 						"on0-obj-off",
 						0
 					],
@@ -1713,6 +1851,54 @@
 					],
 					"destination": [
 						"on1-obj-param",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"on1-obj-button",
+						0
+					],
+					"destination": [
+						"on1-obj-print-click",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"on1-obj-param",
+						0
+					],
+					"destination": [
+						"on1-obj-print-param",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"on1-obj-off",
+						0
+					],
+					"destination": [
+						"on1-obj-print-out",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"on1-obj-on",
+						0
+					],
+					"destination": [
+						"on1-obj-print-out",
 						0
 					]
 				}
