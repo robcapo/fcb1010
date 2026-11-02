@@ -286,23 +286,20 @@
 			{
 				"box": {
 					"id": "on0-obj-param",
-					"maxclass": "live.text",
+					"maxclass": "live.numbox",
 					"numinlets": 1,
 					"numoutlets": 2,
 					"patching_rect": [
 						60,
 						470,
-						40,
-						20
+						44,
+						15
 					],
 					"outlettype": [
 						"",
-						""
+						"float"
 					],
 					"parameter_enable": 1,
-					"mode": 1,
-					"text": "CH 1 On",
-					"texton": "CH 1 On",
 					"varname": "ch1_on",
 					"saved_attribute_attributes": {
 						"valueof": {
@@ -849,23 +846,20 @@
 			{
 				"box": {
 					"id": "on1-obj-param",
-					"maxclass": "live.text",
+					"maxclass": "live.numbox",
 					"numinlets": 1,
 					"numoutlets": 2,
 					"patching_rect": [
 						320,
 						470,
-						40,
-						20
+						44,
+						15
 					],
 					"outlettype": [
 						"",
-						""
+						"float"
 					],
 					"parameter_enable": 1,
-					"mode": 1,
-					"text": "CH 2 On",
-					"texton": "CH 2 On",
 					"varname": "ch2_on",
 					"saved_attribute_attributes": {
 						"valueof": {

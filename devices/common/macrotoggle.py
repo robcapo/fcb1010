@@ -8,7 +8,7 @@ toggle's objects straight into the device patcher, one set per button
 with its own parameter name. (Wrapped in a bpatcher inside the device,
 the button wasn't clickable in Live.)
 
-Inside, the Live parameter is a hidden live.text with an integer value
+Inside, the Live parameter is a hidden live.numbox with an integer value
 from 0 to 127, so a macro maps onto it with a full 0-127 Min/Max. That
 value is scaled to 0-1 and split at the midpoint, so 0-63 sends 0 and
 64-127 sends 1 out of the outlet. The button you see is a second
@@ -58,8 +58,10 @@ def parts(prefix="", origin=(0, 0), longname="On", shortname="On", varname="on",
 
 	p = lambda name: prefix + name  # noqa: E731
 	boxes = [
-		box(p("obj-param"), "live.text", at(20, 70, 40, 20), 1, 2, ["", ""],
-			parameter_enable=1, mode=1, text=longname, texton=longname, varname=varname,
+		# A live.numbox, not a live.text: a Toggle-mode live.text sent 127
+		# stores 1, which reads as off.
+		box(p("obj-param"), "live.numbox", at(20, 70, 44, 15), 1, 2, ["", "float"],
+			parameter_enable=1, varname=varname,
 			saved_attribute_attributes={"valueof": {
 				"parameter_longname": longname,
 				"parameter_shortname": shortname,

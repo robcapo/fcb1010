@@ -20,23 +20,20 @@
 			{
 				"box": {
 					"id": "obj-param",
-					"maxclass": "live.text",
+					"maxclass": "live.numbox",
 					"numinlets": 1,
 					"numoutlets": 2,
 					"patching_rect": [
 						20,
 						70,
-						40,
-						20
+						44,
+						15
 					],
 					"outlettype": [
 						"",
-						""
+						"float"
 					],
 					"parameter_enable": 1,
-					"mode": 1,
-					"text": "On",
-					"texton": "On",
 					"varname": "on",
 					"saved_attribute_attributes": {
 						"valueof": {
