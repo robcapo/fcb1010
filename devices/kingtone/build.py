@@ -120,17 +120,21 @@ def device_patcher(code):
 		boxes.append(box(f"obj-label-{i}", "comment", [300 + i * 60, 20, 50, 20], 1, 0,
 			text=label, presentation=1, presentation_rect=[cx + 20, 2, 50, 18],
 			fontsize=11, fontface=1))
-		# The On button is a MacroToggle (devices/common): a rack macro maps
-		# onto it over 0-127, it turns on at 64 and up, and it sends 0 or 1.
-		toggle, prepend = f"obj-onbp-{i}", f"obj-onprepend-{i}"
-		boxes.append(macrotoggle.bpatcher(toggle, [40 + i * 120, 400], [cx, 4],
+		# The On button is a MacroToggle (devices/common), placed straight in
+		# the patch: a rack macro maps onto it over 0-127, it turns on at 64
+		# and up, and it sends 0 or 1.
+		prepend = f"obj-onprepend-{i}"
+		on_boxes, on_lines, param, outs = macrotoggle.parts(
+			prefix=f"on{i}-", origin=(40 + i * 260, 400), presentation_rect=(cx, 4),
 			longname=f"{label} On", shortname="On", varname=f"ch{i + 1}_on",
-			initial=127 if i == 0 else 0))
-		boxes.append(box(prepend, "newobj", [40 + i * 120, 440, 100, 22], 1, 1, [""],
+			initial=127 if i == 0 else 0)
+		boxes.extend(on_boxes)
+		lines.extend(on_lines)
+		boxes.append(box(prepend, "newobj", [40 + i * 260, 700, 100, 22], 1, 1, [""],
 			text=f"prepend {side}_on"))
-		lines.append(line(toggle, 0, prepend, 0))
+		lines.extend(line(o, 0, prepend, 0) for o in outs)
 		lines.append(line(prepend, 0, "obj-gen", 0))
-		parameters[f"{toggle}::obj-param"] = [f"{label} On", "On", 0]
+		parameters[param] = [f"{label} On", "On", 0]
 		control("live.tab", f"{label} Mode", f"{side}_mode", [cx, 22], [140, 18], 3, ["", "", "float"], {
 			"parameter_longname": f"{label} Mode",
 			"parameter_shortname": "Mode",

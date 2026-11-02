@@ -285,420 +285,176 @@
 			},
 			{
 				"box": {
-					"id": "obj-onbp-0",
-					"maxclass": "bpatcher",
+					"id": "on0-obj-param",
+					"maxclass": "live.text",
 					"numinlets": 1,
+					"numoutlets": 2,
+					"patching_rect": [
+						60,
+						470,
+						40,
+						20
+					],
+					"outlettype": [
+						"",
+						""
+					],
+					"parameter_enable": 1,
+					"mode": 1,
+					"text": "CH 1 On",
+					"texton": "CH 1 On",
+					"varname": "ch1_on",
+					"saved_attribute_attributes": {
+						"valueof": {
+							"parameter_longname": "CH 1 On",
+							"parameter_shortname": "On",
+							"parameter_type": 1,
+							"parameter_mmin": 0,
+							"parameter_mmax": 127,
+							"parameter_initial": [
+								127
+							],
+							"parameter_initial_enable": 1
+						}
+					}
+				}
+			},
+			{
+				"box": {
+					"id": "on0-obj-scale",
+					"maxclass": "newobj",
+					"numinlets": 6,
 					"numoutlets": 1,
 					"patching_rect": [
-						40,
-						400,
-						16,
-						16
+						60,
+						510,
+						110,
+						22
 					],
 					"outlettype": [
 						""
 					],
-					"embed": 1,
-					"patcher": {
-						"fileversion": 1,
-						"appversion": {
-							"major": 8,
-							"minor": 6,
-							"revision": 5,
-							"architecture": "x64",
-							"modernui": 1
-						},
-						"classnamespace": "box",
-						"rect": [
-							100,
-							100,
-							320,
-							340
-						],
-						"openinpresentation": 1,
-						"boxes": [
-							{
-								"box": {
-									"id": "obj-in",
-									"maxclass": "inlet",
-									"numinlets": 0,
-									"numoutlets": 1,
-									"patching_rect": [
-										20,
-										20,
-										30,
-										30
-									],
-									"outlettype": [
-										""
-									],
-									"comment": "0-127 sets the toggle"
-								}
-							},
-							{
-								"box": {
-									"id": "obj-param",
-									"maxclass": "live.text",
-									"numinlets": 1,
-									"numoutlets": 2,
-									"patching_rect": [
-										20,
-										70,
-										40,
-										20
-									],
-									"outlettype": [
-										"",
-										""
-									],
-									"parameter_enable": 1,
-									"mode": 1,
-									"text": "CH 1 On",
-									"texton": "CH 1 On",
-									"varname": "ch1_on",
-									"saved_attribute_attributes": {
-										"valueof": {
-											"parameter_longname": "CH 1 On",
-											"parameter_shortname": "On",
-											"parameter_type": 1,
-											"parameter_mmin": 0,
-											"parameter_mmax": 127,
-											"parameter_initial": [
-												127
-											],
-											"parameter_initial_enable": 1
-										}
-									}
-								}
-							},
-							{
-								"box": {
-									"id": "obj-scale",
-									"maxclass": "newobj",
-									"numinlets": 6,
-									"numoutlets": 1,
-									"patching_rect": [
-										20,
-										110,
-										110,
-										22
-									],
-									"outlettype": [
-										""
-									],
-									"text": "scale 0 127 0. 1."
-								}
-							},
-							{
-								"box": {
-									"id": "obj-split",
-									"maxclass": "newobj",
-									"numinlets": 3,
-									"numoutlets": 2,
-									"patching_rect": [
-										20,
-										140,
-										80,
-										22
-									],
-									"outlettype": [
-										"",
-										""
-									],
-									"text": "split 0. 0.5"
-								}
-							},
-							{
-								"box": {
-									"id": "obj-off",
-									"maxclass": "message",
-									"numinlets": 2,
-									"numoutlets": 1,
-									"patching_rect": [
-										20,
-										170,
-										30,
-										22
-									],
-									"outlettype": [
-										""
-									],
-									"text": "0"
-								}
-							},
-							{
-								"box": {
-									"id": "obj-on",
-									"maxclass": "message",
-									"numinlets": 2,
-									"numoutlets": 1,
-									"patching_rect": [
-										80,
-										170,
-										30,
-										22
-									],
-									"outlettype": [
-										""
-									],
-									"text": "1"
-								}
-							},
-							{
-								"box": {
-									"id": "obj-out",
-									"maxclass": "outlet",
-									"numinlets": 1,
-									"numoutlets": 0,
-									"patching_rect": [
-										20,
-										290,
-										30,
-										30
-									],
-									"comment": "0 off, 1 on"
-								}
-							},
-							{
-								"box": {
-									"id": "obj-set",
-									"maxclass": "newobj",
-									"numinlets": 1,
-									"numoutlets": 1,
-									"patching_rect": [
-										160,
-										170,
-										70,
-										22
-									],
-									"outlettype": [
-										""
-									],
-									"text": "prepend set"
-								}
-							},
-							{
-								"box": {
-									"id": "obj-button",
-									"maxclass": "live.text",
-									"numinlets": 1,
-									"numoutlets": 2,
-									"patching_rect": [
-										160,
-										210,
-										16,
-										16
-									],
-									"outlettype": [
-										"",
-										""
-									],
-									"parameter_enable": 0,
-									"mode": 1,
-									"text": "",
-									"texton": "",
-									"presentation": 1,
-									"presentation_rect": [
-										0,
-										0,
-										16,
-										16
-									]
-								}
-							},
-							{
-								"box": {
-									"id": "obj-times",
-									"maxclass": "newobj",
-									"numinlets": 2,
-									"numoutlets": 1,
-									"patching_rect": [
-										160,
-										250,
-										40,
-										22
-									],
-									"outlettype": [
-										"int"
-									],
-									"text": "* 127"
-								}
-							}
-						],
-						"lines": [
-							{
-								"patchline": {
-									"source": [
-										"obj-in",
-										0
-									],
-									"destination": [
-										"obj-param",
-										0
-									]
-								}
-							},
-							{
-								"patchline": {
-									"source": [
-										"obj-param",
-										0
-									],
-									"destination": [
-										"obj-scale",
-										0
-									]
-								}
-							},
-							{
-								"patchline": {
-									"source": [
-										"obj-scale",
-										0
-									],
-									"destination": [
-										"obj-split",
-										0
-									]
-								}
-							},
-							{
-								"patchline": {
-									"source": [
-										"obj-split",
-										0
-									],
-									"destination": [
-										"obj-off",
-										0
-									]
-								}
-							},
-							{
-								"patchline": {
-									"source": [
-										"obj-split",
-										1
-									],
-									"destination": [
-										"obj-on",
-										0
-									]
-								}
-							},
-							{
-								"patchline": {
-									"source": [
-										"obj-off",
-										0
-									],
-									"destination": [
-										"obj-out",
-										0
-									]
-								}
-							},
-							{
-								"patchline": {
-									"source": [
-										"obj-on",
-										0
-									],
-									"destination": [
-										"obj-out",
-										0
-									]
-								}
-							},
-							{
-								"patchline": {
-									"source": [
-										"obj-off",
-										0
-									],
-									"destination": [
-										"obj-set",
-										0
-									]
-								}
-							},
-							{
-								"patchline": {
-									"source": [
-										"obj-on",
-										0
-									],
-									"destination": [
-										"obj-set",
-										0
-									]
-								}
-							},
-							{
-								"patchline": {
-									"source": [
-										"obj-set",
-										0
-									],
-									"destination": [
-										"obj-button",
-										0
-									]
-								}
-							},
-							{
-								"patchline": {
-									"source": [
-										"obj-button",
-										0
-									],
-									"destination": [
-										"obj-times",
-										0
-									]
-								}
-							},
-							{
-								"patchline": {
-									"source": [
-										"obj-times",
-										0
-									],
-									"destination": [
-										"obj-param",
-										0
-									]
-								}
-							}
-						],
-						"parameters": {
-							"obj-param": [
-								"CH 1 On",
-								"On",
-								0
-							],
-							"inherited_shortname": 1
-						},
-						"autosave": 0
-					},
+					"text": "scale 0 127 0. 1."
+				}
+			},
+			{
+				"box": {
+					"id": "on0-obj-split",
+					"maxclass": "newobj",
+					"numinlets": 3,
+					"numoutlets": 2,
+					"patching_rect": [
+						60,
+						540,
+						80,
+						22
+					],
+					"outlettype": [
+						"",
+						""
+					],
+					"text": "split 0. 0.5"
+				}
+			},
+			{
+				"box": {
+					"id": "on0-obj-off",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						60,
+						570,
+						30,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "0"
+				}
+			},
+			{
+				"box": {
+					"id": "on0-obj-on",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						120,
+						570,
+						30,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "1"
+				}
+			},
+			{
+				"box": {
+					"id": "on0-obj-set",
+					"maxclass": "newobj",
+					"numinlets": 1,
+					"numoutlets": 1,
+					"patching_rect": [
+						200,
+						570,
+						70,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "prepend set"
+				}
+			},
+			{
+				"box": {
+					"id": "on0-obj-button",
+					"maxclass": "live.text",
+					"numinlets": 1,
+					"numoutlets": 2,
+					"patching_rect": [
+						200,
+						610,
+						16,
+						16
+					],
+					"outlettype": [
+						"",
+						""
+					],
+					"parameter_enable": 0,
+					"mode": 1,
+					"text": "",
+					"texton": "",
 					"presentation": 1,
 					"presentation_rect": [
 						8,
 						4,
 						16,
 						16
+					]
+				}
+			},
+			{
+				"box": {
+					"id": "on0-obj-times",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						200,
+						650,
+						40,
+						22
 					],
-					"offset": [
-						0.0,
-						0.0
+					"outlettype": [
+						"int"
 					],
-					"bgmode": 0,
-					"border": 0,
-					"clickthrough": 0,
-					"enablehscroll": 0,
-					"enablevscroll": 0,
-					"lockeddragscroll": 0,
-					"viewvisibility": 1
+					"text": "* 127"
 				}
 			},
 			{
@@ -709,7 +465,7 @@
 					"numoutlets": 1,
 					"patching_rect": [
 						40,
-						440,
+						700,
 						100,
 						22
 					],
@@ -1047,420 +803,176 @@
 			},
 			{
 				"box": {
-					"id": "obj-onbp-1",
-					"maxclass": "bpatcher",
+					"id": "on1-obj-param",
+					"maxclass": "live.text",
 					"numinlets": 1,
+					"numoutlets": 2,
+					"patching_rect": [
+						320,
+						470,
+						40,
+						20
+					],
+					"outlettype": [
+						"",
+						""
+					],
+					"parameter_enable": 1,
+					"mode": 1,
+					"text": "CH 2 On",
+					"texton": "CH 2 On",
+					"varname": "ch2_on",
+					"saved_attribute_attributes": {
+						"valueof": {
+							"parameter_longname": "CH 2 On",
+							"parameter_shortname": "On",
+							"parameter_type": 1,
+							"parameter_mmin": 0,
+							"parameter_mmax": 127,
+							"parameter_initial": [
+								0
+							],
+							"parameter_initial_enable": 1
+						}
+					}
+				}
+			},
+			{
+				"box": {
+					"id": "on1-obj-scale",
+					"maxclass": "newobj",
+					"numinlets": 6,
 					"numoutlets": 1,
 					"patching_rect": [
-						160,
-						400,
-						16,
-						16
+						320,
+						510,
+						110,
+						22
 					],
 					"outlettype": [
 						""
 					],
-					"embed": 1,
-					"patcher": {
-						"fileversion": 1,
-						"appversion": {
-							"major": 8,
-							"minor": 6,
-							"revision": 5,
-							"architecture": "x64",
-							"modernui": 1
-						},
-						"classnamespace": "box",
-						"rect": [
-							100,
-							100,
-							320,
-							340
-						],
-						"openinpresentation": 1,
-						"boxes": [
-							{
-								"box": {
-									"id": "obj-in",
-									"maxclass": "inlet",
-									"numinlets": 0,
-									"numoutlets": 1,
-									"patching_rect": [
-										20,
-										20,
-										30,
-										30
-									],
-									"outlettype": [
-										""
-									],
-									"comment": "0-127 sets the toggle"
-								}
-							},
-							{
-								"box": {
-									"id": "obj-param",
-									"maxclass": "live.text",
-									"numinlets": 1,
-									"numoutlets": 2,
-									"patching_rect": [
-										20,
-										70,
-										40,
-										20
-									],
-									"outlettype": [
-										"",
-										""
-									],
-									"parameter_enable": 1,
-									"mode": 1,
-									"text": "CH 2 On",
-									"texton": "CH 2 On",
-									"varname": "ch2_on",
-									"saved_attribute_attributes": {
-										"valueof": {
-											"parameter_longname": "CH 2 On",
-											"parameter_shortname": "On",
-											"parameter_type": 1,
-											"parameter_mmin": 0,
-											"parameter_mmax": 127,
-											"parameter_initial": [
-												0
-											],
-											"parameter_initial_enable": 1
-										}
-									}
-								}
-							},
-							{
-								"box": {
-									"id": "obj-scale",
-									"maxclass": "newobj",
-									"numinlets": 6,
-									"numoutlets": 1,
-									"patching_rect": [
-										20,
-										110,
-										110,
-										22
-									],
-									"outlettype": [
-										""
-									],
-									"text": "scale 0 127 0. 1."
-								}
-							},
-							{
-								"box": {
-									"id": "obj-split",
-									"maxclass": "newobj",
-									"numinlets": 3,
-									"numoutlets": 2,
-									"patching_rect": [
-										20,
-										140,
-										80,
-										22
-									],
-									"outlettype": [
-										"",
-										""
-									],
-									"text": "split 0. 0.5"
-								}
-							},
-							{
-								"box": {
-									"id": "obj-off",
-									"maxclass": "message",
-									"numinlets": 2,
-									"numoutlets": 1,
-									"patching_rect": [
-										20,
-										170,
-										30,
-										22
-									],
-									"outlettype": [
-										""
-									],
-									"text": "0"
-								}
-							},
-							{
-								"box": {
-									"id": "obj-on",
-									"maxclass": "message",
-									"numinlets": 2,
-									"numoutlets": 1,
-									"patching_rect": [
-										80,
-										170,
-										30,
-										22
-									],
-									"outlettype": [
-										""
-									],
-									"text": "1"
-								}
-							},
-							{
-								"box": {
-									"id": "obj-out",
-									"maxclass": "outlet",
-									"numinlets": 1,
-									"numoutlets": 0,
-									"patching_rect": [
-										20,
-										290,
-										30,
-										30
-									],
-									"comment": "0 off, 1 on"
-								}
-							},
-							{
-								"box": {
-									"id": "obj-set",
-									"maxclass": "newobj",
-									"numinlets": 1,
-									"numoutlets": 1,
-									"patching_rect": [
-										160,
-										170,
-										70,
-										22
-									],
-									"outlettype": [
-										""
-									],
-									"text": "prepend set"
-								}
-							},
-							{
-								"box": {
-									"id": "obj-button",
-									"maxclass": "live.text",
-									"numinlets": 1,
-									"numoutlets": 2,
-									"patching_rect": [
-										160,
-										210,
-										16,
-										16
-									],
-									"outlettype": [
-										"",
-										""
-									],
-									"parameter_enable": 0,
-									"mode": 1,
-									"text": "",
-									"texton": "",
-									"presentation": 1,
-									"presentation_rect": [
-										0,
-										0,
-										16,
-										16
-									]
-								}
-							},
-							{
-								"box": {
-									"id": "obj-times",
-									"maxclass": "newobj",
-									"numinlets": 2,
-									"numoutlets": 1,
-									"patching_rect": [
-										160,
-										250,
-										40,
-										22
-									],
-									"outlettype": [
-										"int"
-									],
-									"text": "* 127"
-								}
-							}
-						],
-						"lines": [
-							{
-								"patchline": {
-									"source": [
-										"obj-in",
-										0
-									],
-									"destination": [
-										"obj-param",
-										0
-									]
-								}
-							},
-							{
-								"patchline": {
-									"source": [
-										"obj-param",
-										0
-									],
-									"destination": [
-										"obj-scale",
-										0
-									]
-								}
-							},
-							{
-								"patchline": {
-									"source": [
-										"obj-scale",
-										0
-									],
-									"destination": [
-										"obj-split",
-										0
-									]
-								}
-							},
-							{
-								"patchline": {
-									"source": [
-										"obj-split",
-										0
-									],
-									"destination": [
-										"obj-off",
-										0
-									]
-								}
-							},
-							{
-								"patchline": {
-									"source": [
-										"obj-split",
-										1
-									],
-									"destination": [
-										"obj-on",
-										0
-									]
-								}
-							},
-							{
-								"patchline": {
-									"source": [
-										"obj-off",
-										0
-									],
-									"destination": [
-										"obj-out",
-										0
-									]
-								}
-							},
-							{
-								"patchline": {
-									"source": [
-										"obj-on",
-										0
-									],
-									"destination": [
-										"obj-out",
-										0
-									]
-								}
-							},
-							{
-								"patchline": {
-									"source": [
-										"obj-off",
-										0
-									],
-									"destination": [
-										"obj-set",
-										0
-									]
-								}
-							},
-							{
-								"patchline": {
-									"source": [
-										"obj-on",
-										0
-									],
-									"destination": [
-										"obj-set",
-										0
-									]
-								}
-							},
-							{
-								"patchline": {
-									"source": [
-										"obj-set",
-										0
-									],
-									"destination": [
-										"obj-button",
-										0
-									]
-								}
-							},
-							{
-								"patchline": {
-									"source": [
-										"obj-button",
-										0
-									],
-									"destination": [
-										"obj-times",
-										0
-									]
-								}
-							},
-							{
-								"patchline": {
-									"source": [
-										"obj-times",
-										0
-									],
-									"destination": [
-										"obj-param",
-										0
-									]
-								}
-							}
-						],
-						"parameters": {
-							"obj-param": [
-								"CH 2 On",
-								"On",
-								0
-							],
-							"inherited_shortname": 1
-						},
-						"autosave": 0
-					},
+					"text": "scale 0 127 0. 1."
+				}
+			},
+			{
+				"box": {
+					"id": "on1-obj-split",
+					"maxclass": "newobj",
+					"numinlets": 3,
+					"numoutlets": 2,
+					"patching_rect": [
+						320,
+						540,
+						80,
+						22
+					],
+					"outlettype": [
+						"",
+						""
+					],
+					"text": "split 0. 0.5"
+				}
+			},
+			{
+				"box": {
+					"id": "on1-obj-off",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						320,
+						570,
+						30,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "0"
+				}
+			},
+			{
+				"box": {
+					"id": "on1-obj-on",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						380,
+						570,
+						30,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "1"
+				}
+			},
+			{
+				"box": {
+					"id": "on1-obj-set",
+					"maxclass": "newobj",
+					"numinlets": 1,
+					"numoutlets": 1,
+					"patching_rect": [
+						460,
+						570,
+						70,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "prepend set"
+				}
+			},
+			{
+				"box": {
+					"id": "on1-obj-button",
+					"maxclass": "live.text",
+					"numinlets": 1,
+					"numoutlets": 2,
+					"patching_rect": [
+						460,
+						610,
+						16,
+						16
+					],
+					"outlettype": [
+						"",
+						""
+					],
+					"parameter_enable": 0,
+					"mode": 1,
+					"text": "",
+					"texton": "",
 					"presentation": 1,
 					"presentation_rect": [
 						164,
 						4,
 						16,
 						16
+					]
+				}
+			},
+			{
+				"box": {
+					"id": "on1-obj-times",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						460,
+						650,
+						40,
+						22
 					],
-					"offset": [
-						0.0,
-						0.0
+					"outlettype": [
+						"int"
 					],
-					"bgmode": 0,
-					"border": 0,
-					"clickthrough": 0,
-					"enablehscroll": 0,
-					"enablevscroll": 0,
-					"lockeddragscroll": 0,
-					"viewvisibility": 1
+					"text": "* 127"
 				}
 			},
 			{
@@ -1470,8 +982,8 @@
 					"numinlets": 1,
 					"numoutlets": 1,
 					"patching_rect": [
-						160,
-						440,
+						300,
+						700,
 						100,
 						22
 					],
@@ -1836,7 +1348,127 @@
 			{
 				"patchline": {
 					"source": [
-						"obj-onbp-0",
+						"on0-obj-param",
+						0
+					],
+					"destination": [
+						"on0-obj-scale",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"on0-obj-scale",
+						0
+					],
+					"destination": [
+						"on0-obj-split",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"on0-obj-split",
+						0
+					],
+					"destination": [
+						"on0-obj-off",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"on0-obj-split",
+						1
+					],
+					"destination": [
+						"on0-obj-on",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"on0-obj-off",
+						0
+					],
+					"destination": [
+						"on0-obj-set",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"on0-obj-on",
+						0
+					],
+					"destination": [
+						"on0-obj-set",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"on0-obj-set",
+						0
+					],
+					"destination": [
+						"on0-obj-button",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"on0-obj-button",
+						0
+					],
+					"destination": [
+						"on0-obj-times",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"on0-obj-times",
+						0
+					],
+					"destination": [
+						"on0-obj-param",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"on0-obj-off",
+						0
+					],
+					"destination": [
+						"obj-onprepend-0",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"on0-obj-on",
 						0
 					],
 					"destination": [
@@ -1980,7 +1612,127 @@
 			{
 				"patchline": {
 					"source": [
-						"obj-onbp-1",
+						"on1-obj-param",
+						0
+					],
+					"destination": [
+						"on1-obj-scale",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"on1-obj-scale",
+						0
+					],
+					"destination": [
+						"on1-obj-split",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"on1-obj-split",
+						0
+					],
+					"destination": [
+						"on1-obj-off",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"on1-obj-split",
+						1
+					],
+					"destination": [
+						"on1-obj-on",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"on1-obj-off",
+						0
+					],
+					"destination": [
+						"on1-obj-set",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"on1-obj-on",
+						0
+					],
+					"destination": [
+						"on1-obj-set",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"on1-obj-set",
+						0
+					],
+					"destination": [
+						"on1-obj-button",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"on1-obj-button",
+						0
+					],
+					"destination": [
+						"on1-obj-times",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"on1-obj-times",
+						0
+					],
+					"destination": [
+						"on1-obj-param",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"on1-obj-off",
+						0
+					],
+					"destination": [
+						"obj-onprepend-1",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"on1-obj-on",
 						0
 					],
 					"destination": [
@@ -2123,7 +1875,7 @@
 			}
 		],
 		"parameters": {
-			"obj-onbp-0::obj-param": [
+			"on0-obj-param": [
 				"CH 1 On",
 				"On",
 				0
@@ -2153,7 +1905,7 @@
 				"Presence",
 				0
 			],
-			"obj-onbp-1::obj-param": [
+			"on1-obj-param": [
 				"CH 2 On",
 				"On",
 				0

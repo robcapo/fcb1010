@@ -19,24 +19,6 @@
 		"boxes": [
 			{
 				"box": {
-					"id": "obj-in",
-					"maxclass": "inlet",
-					"numinlets": 0,
-					"numoutlets": 1,
-					"patching_rect": [
-						20,
-						20,
-						30,
-						30
-					],
-					"outlettype": [
-						""
-					],
-					"comment": "0-127 sets the toggle"
-				}
-			},
-			{
-				"box": {
 					"id": "obj-param",
 					"maxclass": "live.text",
 					"numinlets": 1,
@@ -146,21 +128,6 @@
 			},
 			{
 				"box": {
-					"id": "obj-out",
-					"maxclass": "outlet",
-					"numinlets": 1,
-					"numoutlets": 0,
-					"patching_rect": [
-						20,
-						290,
-						30,
-						30
-					],
-					"comment": "0 off, 1 on"
-				}
-			},
-			{
-				"box": {
 					"id": "obj-set",
 					"maxclass": "newobj",
 					"numinlets": 1,
@@ -223,21 +190,42 @@
 					],
 					"text": "* 127"
 				}
+			},
+			{
+				"box": {
+					"id": "obj-in",
+					"maxclass": "inlet",
+					"numinlets": 0,
+					"numoutlets": 1,
+					"patching_rect": [
+						20,
+						20,
+						30,
+						30
+					],
+					"outlettype": [
+						""
+					],
+					"comment": "0-127 sets the toggle"
+				}
+			},
+			{
+				"box": {
+					"id": "obj-out",
+					"maxclass": "outlet",
+					"numinlets": 1,
+					"numoutlets": 0,
+					"patching_rect": [
+						20,
+						290,
+						30,
+						30
+					],
+					"comment": "0 off, 1 on"
+				}
 			}
 		],
 		"lines": [
-			{
-				"patchline": {
-					"source": [
-						"obj-in",
-						0
-					],
-					"destination": [
-						"obj-param",
-						0
-					]
-				}
-			},
 			{
 				"patchline": {
 					"source": [
@@ -293,30 +281,6 @@
 						0
 					],
 					"destination": [
-						"obj-out",
-						0
-					]
-				}
-			},
-			{
-				"patchline": {
-					"source": [
-						"obj-on",
-						0
-					],
-					"destination": [
-						"obj-out",
-						0
-					]
-				}
-			},
-			{
-				"patchline": {
-					"source": [
-						"obj-off",
-						0
-					],
-					"destination": [
 						"obj-set",
 						0
 					]
@@ -366,6 +330,42 @@
 					],
 					"destination": [
 						"obj-param",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"obj-in",
+						0
+					],
+					"destination": [
+						"obj-param",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"obj-off",
+						0
+					],
+					"destination": [
+						"obj-out",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"obj-on",
+						0
+					],
+					"destination": [
+						"obj-out",
 						0
 					]
 				}

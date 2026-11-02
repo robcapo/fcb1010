@@ -3,8 +3,10 @@
 	python3 macrotoggle.py
 
 writes MacroToggle.maxpat, a standalone abstraction to load in a
-bpatcher. Device build scripts import patcher() instead and embed a copy
-per button, each with its own parameter name.
+bpatcher. Device build scripts import parts() instead and place the
+toggle's objects straight into the device patcher, one set per button
+with its own parameter name. (Wrapped in a bpatcher inside the device,
+the button wasn't clickable in Live.)
 
 Inside, the Live parameter is a hidden live.text with an integer value
 from 0 to 127, so a macro maps onto it with a full 0-127 Min/Max. That
@@ -41,11 +43,22 @@ def line(src, outlet, dst, inlet):
 	return {"patchline": {"source": [src, outlet], "destination": [dst, inlet]}}
 
 
-def patcher(longname="On", shortname="On", varname="on", initial=0):
-	"""The toggle's patcher. Its Live parameter is the box "obj-param"."""
+def parts(prefix="", origin=(0, 0), longname="On", shortname="On", varname="on", initial=0,
+		presentation_rect=(0, 0)):
+	"""The toggle's boxes and lines, with ids prefixed and positions offset.
+
+	Returns (boxes, lines, param, outs): param is the Live parameter's
+	box id, and outs are the ids of the "0" and "1" messages that carry
+	the output.
+	"""
+	ox, oy = origin
+
+	def at(x, y, w, h):
+		return [ox + x, oy + y, w, h]
+
+	p = lambda name: prefix + name  # noqa: E731
 	boxes = [
-		box("obj-in", "inlet", [20, 20, 30, 30], 0, 1, [""], comment="0-127 sets the toggle"),
-		box("obj-param", "live.text", [20, 70, 40, 20], 1, 2, ["", ""],
+		box(p("obj-param"), "live.text", at(20, 70, 40, 20), 1, 2, ["", ""],
 			parameter_enable=1, mode=1, text=longname, texton=longname, varname=varname,
 			saved_attribute_attributes={"valueof": {
 				"parameter_longname": longname,
@@ -56,31 +69,38 @@ def patcher(longname="On", shortname="On", varname="on", initial=0):
 				"parameter_initial": [initial],
 				"parameter_initial_enable": 1,
 			}}),
-		box("obj-scale", "newobj", [20, 110, 110, 22], 6, 1, [""], text="scale 0 127 0. 1."),
-		box("obj-split", "newobj", [20, 140, 80, 22], 3, 2, ["", ""], text="split 0. 0.5"),
-		box("obj-off", "message", [20, 170, 30, 22], 2, 1, [""], text="0"),
-		box("obj-on", "message", [80, 170, 30, 22], 2, 1, [""], text="1"),
-		box("obj-out", "outlet", [20, 290, 30, 30], 1, 0, comment="0 off, 1 on"),
-		box("obj-set", "newobj", [160, 170, 70, 22], 1, 1, [""], text="prepend set"),
-		box("obj-button", "live.text", [160, 210, 16, 16], 1, 2, ["", ""],
+		box(p("obj-scale"), "newobj", at(20, 110, 110, 22), 6, 1, [""], text="scale 0 127 0. 1."),
+		box(p("obj-split"), "newobj", at(20, 140, 80, 22), 3, 2, ["", ""], text="split 0. 0.5"),
+		box(p("obj-off"), "message", at(20, 170, 30, 22), 2, 1, [""], text="0"),
+		box(p("obj-on"), "message", at(80, 170, 30, 22), 2, 1, [""], text="1"),
+		box(p("obj-set"), "newobj", at(160, 170, 70, 22), 1, 1, [""], text="prepend set"),
+		box(p("obj-button"), "live.text", at(160, 210, 16, 16), 1, 2, ["", ""],
 			parameter_enable=0, mode=1, text="", texton="",
-			presentation=1, presentation_rect=[0, 0] + SIZE),
-		box("obj-times", "newobj", [160, 250, 40, 22], 2, 1, ["int"], text="* 127"),
+			presentation=1, presentation_rect=list(presentation_rect) + SIZE),
+		box(p("obj-times"), "newobj", at(160, 250, 40, 22), 2, 1, ["int"], text="* 127"),
 	]
 	lines = [
-		line("obj-in", 0, "obj-param", 0),
-		line("obj-param", 0, "obj-scale", 0),
-		line("obj-scale", 0, "obj-split", 0),
-		line("obj-split", 0, "obj-off", 0),
-		line("obj-split", 1, "obj-on", 0),
-		line("obj-off", 0, "obj-out", 0),
-		line("obj-on", 0, "obj-out", 0),
-		line("obj-off", 0, "obj-set", 0),
-		line("obj-on", 0, "obj-set", 0),
-		line("obj-set", 0, "obj-button", 0),
-		line("obj-button", 0, "obj-times", 0),
-		line("obj-times", 0, "obj-param", 0),
+		line(p("obj-param"), 0, p("obj-scale"), 0),
+		line(p("obj-scale"), 0, p("obj-split"), 0),
+		line(p("obj-split"), 0, p("obj-off"), 0),
+		line(p("obj-split"), 1, p("obj-on"), 0),
+		line(p("obj-off"), 0, p("obj-set"), 0),
+		line(p("obj-on"), 0, p("obj-set"), 0),
+		line(p("obj-set"), 0, p("obj-button"), 0),
+		line(p("obj-button"), 0, p("obj-times"), 0),
+		line(p("obj-times"), 0, p("obj-param"), 0),
 	]
+	return boxes, lines, p("obj-param"), [p("obj-off"), p("obj-on")]
+
+
+def patcher(**names):
+	"""The standalone abstraction: parts() plus an inlet and an outlet."""
+	boxes, lines, param, outs = parts(**names)
+	boxes.append(box("obj-in", "inlet", [20, 20, 30, 30], 0, 1, [""], comment="0-127 sets the toggle"))
+	boxes.append(box("obj-out", "outlet", [20, 290, 30, 30], 1, 0, comment="0 off, 1 on"))
+	lines.append(line("obj-in", 0, param, 0))
+	lines.extend(line(o, 0, "obj-out", 0) for o in outs)
+	longname = names.get("longname", "On")
 	return {
 		"fileversion": 1,
 		"appversion": APPVERSION,
@@ -89,18 +109,9 @@ def patcher(longname="On", shortname="On", varname="on", initial=0):
 		"openinpresentation": 1,
 		"boxes": boxes,
 		"lines": lines,
-		"parameters": {"obj-param": [longname, shortname, 0], "inherited_shortname": 1},
+		"parameters": {"obj-param": [longname, names.get("shortname", "On"), 0], "inherited_shortname": 1},
 		"autosave": 0,
 	}
-
-
-def bpatcher(id, rect, presentation_rect, **names):
-	"""A bpatcher box embedding a copy of the toggle, sized to the button."""
-	return box(id, "bpatcher", rect + SIZE, 1, 1, [""],
-		embed=1, patcher=patcher(**names), presentation=1,
-		presentation_rect=presentation_rect + SIZE, offset=[0.0, 0.0],
-		bgmode=0, border=0, clickthrough=0, enablehscroll=0, enablevscroll=0,
-		lockeddragscroll=0, viewvisibility=1)
 
 
 def main():

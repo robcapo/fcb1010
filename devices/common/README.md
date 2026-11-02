@@ -14,8 +14,9 @@ An on/off button for devices whose switches are driven by rack macros.
 - **Click:** flips the output, by setting the parameter to 0 or 127.
 - **Inlet:** a number from 0 to 127 sets it.
 
-`MacroToggle.maxpat` is the abstraction on its own, for use in a
-bpatcher in any device; give each copy its own parameter name. Device
-build scripts use `macrotoggle.py` instead, which embeds a copy per
-button with its name already set. Run `python3 macrotoggle.py` to
-regenerate the `.maxpat`.
+`MacroToggle.maxpat` is the abstraction on its own, for a bpatcher in
+your own patches; give each copy its own parameter name. Inside a device
+built by these scripts, a bpatcher copy wasn't clickable in Live, so
+device build scripts call `macrotoggle.parts()` instead, which places the
+toggle's objects straight into the device patch with the name already
+set. Run `python3 macrotoggle.py` to regenerate the `.maxpat`.
